@@ -1,5 +1,4 @@
 # %%
-from ast import Raise
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -49,6 +48,54 @@ def change_basis(v1, v2, mode='xy'):
     A = np.vstack((unit_x, unit_y, unit_z)).T
 
     return A
+
+
+def get_translate_mat(new_origin):
+
+    t_mat = np.eye(4)
+    t_mat[:3,3] = -1*new_origin
+
+    return t_mat
+
+
+def get_pln_t_mat(pln_pnts, new_origin, y0):
+    
+    new_x,_ = plane_fitter(pln_pnts)
+
+    y_dir = y0 - new_origin
+
+    new_z = np.cross(new_x, y_dir)
+
+    cob_mat = change_basis(new_x, new_z, mode='xz')
+
+    return cob_mat
+
+
+if __name__ == '__main__':
+
+    ten_deg = np.loadtxt('caltest_25_03_22/10_deg.txt')
+    coords = ten_deg[:,1:4]
+
+    pln_inds = np.arange(1,17)
+    orgn_ind = 6
+    y0_ind = 7
+
+    trans_mat = get_pln_t_mat(coords[pln_inds], coords[orgn_ind], coords[y0_ind])
+
+    origin = coords[orgn_ind]
+
+    trnsltd = coords - origin
+
+    transformed = np.matmul(trans_mat.T, trnsltd.T).T
+
+    transformed = transformed[pln_inds]
+
+    plt.scatter(transformed[:,1], transformed[:,2])
+    plt.show()
+
+
+
+
 
 
 
