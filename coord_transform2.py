@@ -1,6 +1,5 @@
 # %%
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 
@@ -112,10 +111,10 @@ def matrix_transform(coords, trans_mat):
 
 
 
-def do_transform(data, ids, plane_ids, origin_id, y0_id):
-    pln_pnts = data[ids == plane_ids,1:]
-    origin = data[ids == origin_id,1:]
-    y0 = data[ids == y0_id,1:]
+def do_transform(data, plane_inds, origin_ind, y0_ind):
+    pln_pnts = data[plane_inds]
+    origin = data[origin_ind]
+    y0 = data[y0_ind]
 
     trans_mat = get_pln_t_mat(pln_pnts, origin, y0)
 
@@ -133,22 +132,12 @@ if __name__ == '__main__':
     orgn_ind = 8
     y0_ind = 7
 
-    trans_mat = get_pln_t_mat(coords[pln_inds], coords[orgn_ind], coords[y0_ind])
-    
-    transformed = matrix_transform(coords, trans_mat)
+    transformed = do_transform(coords, pln_inds, orgn_ind, y0_ind)
 
-    transformed = transformed[pln_inds]
 
     plt.scatter(transformed[:,1], transformed[:,2])
     plt.show()
 
 
-
-
-
-
-
-
-    
     
 # %%
