@@ -8,8 +8,12 @@ import os.path
 
 
 def sphere_filter(data, r, c, tol):
+    """Filters out any points not on a spherical surface to within a tolerance"""
 
-    coords = data[:,1:3]
+    # extract coords
+    coords = data[:,1:4]
+
+    # Subtract centre of sphere from coords to satisfy equation of sphere 
     cntrd_coords =  coords - c
 
     # Calculate how far each point is from sphere surface
@@ -23,13 +27,7 @@ def sphere_filter(data, r, c, tol):
 
 
 def size_filter(data, size_arr, tol):
-    '''
-    Filters out points not within a tolerance of given sizes
-
-    :param data: numpy array with size values in column 7
-    :param size_arr: 1d numpy array with sizes
-    :param tol: tolerance
-    '''
+    """Filters out points not within a tolerance of given sizes"""
 
     # Extract sizes
     sizes = data[:, 7]
@@ -51,6 +49,7 @@ def size_filter(data, size_arr, tol):
 
     return data_out
 
+
 if __name__ == '__main__':
     ten_deg = np.loadtxt('caltest_25_03_22/10_deg.txt')
     
@@ -62,7 +61,7 @@ if __name__ == '__main__':
 
     ten_deg[:,1:4] = do_transform(coords, pln_inds, orgn_ind, y0_ind)
 
-    fltrd = sphere_filter(ten_deg[:,1:4], 4101.4, (4101.4,0,0), 4)
+    fltrd = sphere_filter(ten_deg, 4101.4, (4101.4,0,0), 4)
     sfiltrd = size_filter(ten_deg, np.array([2.6,1.8,1.1]), .4)
 
     plt.scatter(fltrd[:,1], fltrd[:,2], s=1)
