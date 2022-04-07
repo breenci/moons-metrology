@@ -90,7 +90,7 @@ if __name__ == '__main__':
 
     transformed = transformed[pln_inds]
 
-    plt.scatter(transformed[:,1], transformed[:,2])
+    plt.scatter(transformed[:,2], transformed[:,0])
     plt.show()
 
 
