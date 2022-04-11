@@ -17,7 +17,7 @@ def plane_fitter(point_coords):
     norm = svd[:,2]
     
     # Take the +ve norm
-    if norm[1]<0:
+    if norm[1]>0:
         norm = -1*norm
     
     return norm, centroid
@@ -110,6 +110,19 @@ def matrix_transform(coords, trans_mat):
     return trans_coords
 
 
+def project_point_to_plane(normal, point, pln_pnt=(0,0,0)):
+    ''' Projects a point to a plane'''
+    
+    #normalise vector
+    normal = normal/np.sqrt(np.sum(normal**2))
+
+    pln_to_pnt = point - pln_pnt
+    
+    # project to plane
+    new_point = point - normal*np.dot(normal, pln_to_pnt)
+    
+    return new_point
+
 
 def do_transform(data, plane_inds, origin_ind, y0_ind):
     pln_pnts = data[plane_inds]
@@ -135,7 +148,7 @@ if __name__ == '__main__':
     transformed = do_transform(coords, pln_inds, orgn_ind, y0_ind)
 
 
-    plt.scatter(transformed[:,1], transformed[:,2])
+    plt.scatter(transformed[:,0], transformed[:,2])
     plt.show()
 
 
