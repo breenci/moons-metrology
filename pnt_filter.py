@@ -105,16 +105,40 @@ def size_filter_pntcld(fn, size_arr, tol):
     return pntcld_fltrd
 
 
+def make_filter_output(fn, r=4101.1, c=[4101.1,0,0], rtol=4, sizes=[1.15,1.9,2.6], stol=.25):
+    """Prepares point cloud for fpu identification"""
+    
+    # make input lists arrays 
+    c_arr = np.array(c)
+    size_arr = np.array(sizes)
+
+    # do sphere filtering
+    sp_fltrd_pc = sphere_filter_pntcld(fn, r, c_arr, rtol)
+
+    # do size filtering
+    size_mask,_,new_sizes = size_filter(sp_fltrd_pc[:,1:4], sp_fltrd_pc[:,7], size_arr, stol)
+    ffltrd = sp_fltrd_pc[size_mask]
+
+    # make sizes discrete
+    ffltrd[:, 7] = new_sizes
+
+    # flip to left handed coordinate system
+    ffltrd[:,1] = -1*ffltrd[:,1]
+
+    return ffltrd
+    
+
+
 if __name__ == '__main__':
 
     # demonstration of the spherical filter on a test point cloud file
     # load a test file
-    unfltrd = np.loadtxt('caltest_22_06_21/transformed/uncalibrated/0_deg_t.txt')
+    unfltrd = np.loadtxt('test_filter.txt')
 
     # do the sphere filtering. Radius of curvature of the plate is 4101.1mm, 
     # centre is assumed to be directly above the zero point => c = (4101.1,0,0)
     # tolerance = 4
-    fltrd = sphere_filter_pntcld('caltest_22_06_21/transformed/uncalibrated/0_deg_t.txt',
+    fltrd = sphere_filter_pntcld('test_filter.txt',
                                  4101.1, np.array([4101.1, 0, 0]), 4)
 
     # filter removes any points not on the spherical focal plane. Only fpu dots
@@ -129,7 +153,19 @@ if __name__ == '__main__':
     ax2.set_ylabel('Z (mm)')
     ax2.set_title('Filtered')
     plt.tight_layout()
-    plt.show()
 
+
+    ffltrd = make_filter_output('test_filter.txt', c=[4101.4,0,0])
+
+    fig2, (ax1, ax2) = plt.subplots(1, 2)
+    ax1.scatter(unfltrd[:, 2], unfltrd[:, 3], s=1)
+    ax1.set_xlabel('Y (mm)')
+    ax1.set_ylabel('Z (mm)')
+    ax1.set_title('Unfiltered')
+    ax2.scatter(ffltrd[:, 2], ffltrd[:, 3], s=1)
+    ax2.set_xlabel('Y (mm)')
+    ax2.set_ylabel('Z (mm)')
+    ax2.set_title('Filtered')
+    plt.tight_layout()
 
 # %%
