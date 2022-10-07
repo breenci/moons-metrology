@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 
 def sphere_filter(coords, r, c, tol):
     """
-     Filters out any points not on a spherical surface to within a tolerance
+    Filters out any points not on a spherical surface to within a tolerance
 
     :param coords: 3D point cloud coordinates with X, Y, and Z in columns
     :type data: N x 3 numpy array
@@ -57,15 +57,19 @@ def size_filter(coords, sizes, size_arr, tol):
     # Create logical mask for first set of bounds then loop through the other
     # bounds and update the mask with each loop
     in_bnds_mask = (sizes < upper_bnds[0]) & (sizes > lower_bnds[0])
+    # Make sizes discrete and match to known values
+    sizes[in_bnds_mask] = size_arr[0]
 
     for i in range(1, len(upper_bnds)):
         cond_mask = (sizes < upper_bnds[i]) & (sizes > lower_bnds[i])
+        sizes[cond_mask] = size_arr[i]
         in_bnds_mask = in_bnds_mask | cond_mask
 
     # Filter dataset using mask
     data_out = coords[in_bnds_mask]
+    sizes_out = sizes[in_bnds_mask]
 
-    return in_bnds_mask, data_out
+    return in_bnds_mask, data_out, sizes_out
 
 
 def sphere_filter_pntcld(fn, r, c, tol):
@@ -85,7 +89,7 @@ def sphere_filter_pntcld(fn, r, c, tol):
 
 
 def size_filter_pntcld(fn, size_arr, tol):
-    """Apply sphere filter to a moons point cloud file"""
+    """Apply size filter to a moons point cloud file"""
 
     # load the point cloud file
     pntcld_data = np.loadtxt(fn)
