@@ -1,11 +1,11 @@
-# %%
 import numpy as np
 import matplotlib.pyplot as plt
+from do_transform import plt2pix
 
 
 def polar2cart(rho, theta, roc, angle_unit='rad'):
     """Convert from plate polar to plate cartesian coordinate systems
-    
+
     :param rho: Radial coordinate of target
     :type rho: float
     :param theta: Angular coordinate of target
@@ -42,16 +42,16 @@ def polar2cart(rho, theta, roc, angle_unit='rad'):
 
 
 if __name__ == '__main__':
-    #ACQ6
-    rho6 = 158.331147 #in mm
-    theta6 = 2.335426 #in rad
-    plt_roc = 4101.8 #in mm
+    # ACQ6
+    rho6 = 158.331147  # in mm
+    theta6 = 2.335426  # in rad
+    plt_roc = 4101.8  # in mm
 
-    #ACQ17
+    # ACQ17
     rho17 = 410.535532
     theta17 = 5.257187
 
-    #ACQ20
+    # ACQ20
     rho20 = 392.96983
     theta20 = 0.688058
 
@@ -60,7 +60,7 @@ if __name__ == '__main__':
     thetas = np.array([theta6, theta17, theta20])
     labels = np.array(["ACQ6", "ACQ17", "ACQ20"])
 
-    x,y,z = polar2cart(rhos, thetas, plt_roc)
+    x, y, z = polar2cart(rhos, thetas, plt_roc)
 
     fig, ax1 = plt.subplots()
     for i in range(len(x)):
@@ -71,5 +71,11 @@ if __name__ == '__main__':
     plt.legend()
     plt.show()
 
+    pos6 = np.expand_dims(np.array([x[0], y[0], z[0]]), axis=0)
+    pix6 = plt2pix(pos6, np.loadtxt("data/mask_test/AC_mats/t_mat_AC6.txt"))
 
-# %%
+    pos17 = np.expand_dims(np.array([x[1], y[1], z[1]]), axis=0)
+    pix17 = plt2pix(pos6, np.loadtxt("data/mask_test/AC_mats/t_mat_AC17.txt"))
+
+    pos20 = np.expand_dims(np.array([x[2], y[2], z[2]]), axis=0)
+    pix20 = plt2pix(pos20, np.loadtxt("data/mask_test/AC_mats/t_mat_AC20.txt"))
