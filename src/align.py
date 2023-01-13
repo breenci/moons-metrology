@@ -46,29 +46,50 @@ def kabsch_umeyama(A, B, scale=True):
     return trans_mat
 
 
-def align_measurements(fns, targ_ids):
-
+def align_measurements(ref, unal, targ_ids):
+    """Aligns point clouds with reference"""
     # load ref id and xyz
-    ref = np.loadtxt(fns[0], usecols=(0,1,2,3))
     # get targets from input ids
-    ref_targs = ref[np.searchsorted(ref[:,0], targ_ids), 1:4]
-    plt.scatter(ref_targs[:,0], ref_targs[:,1])
+    ref_ids = ref[:,0]
 
     # load each unaligned data set and align to ref using KU
-    for n in range(len(fns)-1):
-        unaligned = np.loadtxt(fns[n+1], usecols=(0,1,2,3))
-        una_targs = unaligned[np.searchsorted(unaligned[:,0], targ_ids), 1:4]
-        plt.scatter(una_targs[:,0], una_targs[:,1])
-        # align to ref
-        aligned = matrix_transform(unaligned[:,1:4], kabsch_umeyama(ref_targs, una_targs))
+    unal_ids = unal[:,0]
+    
+    # Only use reference targets that are detected in both datasets
+    # Use ids to find these targets
+    common_ids, ref_idxs, unal_idxs = np.intersect1d(ref_ids, unal_ids, 
+                                                     return_indices=True)
+    
+    # Mask to select targets
+    common_targs_mask = np.isin(common_ids, targ_ids)
+    
+    # get position of targets in reference and unaligned datasets
+    ref_targs = ref[ref_idxs[common_targs_mask]]
+    unal_targs = unal[unal_idxs[common_targs_mask]]
+    
+    # get transformation matrix for the alignment using KU
+    al_mat = kabsch_umeyama(ref_targs[:,1:4], unal_targs[:,1:4], scale=False)
+    
+    # Do alignment and return aligned coords
+    al_coords = matrix_transform(unal[:,1:4], al_mat)
+        
+    return al_coords
 
-    return aligned
+
+def align_from_file(ref_fn, unal_fn, targ_ids):
+    
+    ref_arr = np.loadtxt(ref_fn)
+    unal_arr = np.loadtxt(unal_fn)
+    
+    al_coords = align_measurements(ref_arr, unal_arr, targ_ids)
+    
+    return al_coords
 
 
 if __name__ == '__main__':
     # # load datasets
-    # cam_mask = np.loadtxt('mask_test/mask_AC_01.txt')
-    # met_mask = np.loadtxt('mask_test/transformed_coords_mask1_15092021.txt')
+    # cam_mask = np.loadtxt('data/mask_test/mask_AC_01.txt')
+    # met_mask = np.loadtxt('data/mask_test/transformed_coords_mask1_15092021.txt')
     # #met_mask[:,0] = 0
 
     # cmask_pad = np.hstack((cam_mask, np.zeros((len(cam_mask[:,1]), 1))))
@@ -103,15 +124,18 @@ if __name__ == '__main__':
     # scat = ax.scatter(srtd_mmask[:,1], srtd_mmask[:,2], c=rms_pnts)
     # cb = plt.colorbar(scat)
 
+    n=20
     
-    al_100 = align_measurements(['caltest_25_03_22/10_deg.txt', 'caltest_25_03_22/100_deg.txt'], np.arange(50,61))
-    ref = np.loadtxt('caltest_25_03_22/10_deg.txt')
-    unal_100 = np.loadtxt('caltest_25_03_22/100_deg.txt')
+    al_100 = align_from_file('data/temp_tests/measurement1_151122/temp_test1_151122.obc',
+                                 'data/temp_tests/measurement3_151122/temp_test3_151122.obc',
+                                np.arange(120, 130))
+    ref = np.loadtxt('data/temp_tests/measurement1_151122/temp_test1_151122.obc')
+    unal_100 = np.loadtxt('data/temp_tests/measurement3_151122/temp_test3_151122.obc')
 
     fig, ax = plt.subplots()
-    ax.scatter(al_100[:,0], al_100[:,2])
-    ax.scatter(unal_100[:,1], unal_100[:,3], color='r')
-    ax.scatter(ref[:,1], ref[:,3])
+    ax.scatter(al_100[:n,0], al_100[:n,2], color='b')
+    # ax.scatter(unal_100[120:130,1], unal_100[:,3], color='r')
+    ax.scatter(ref[:n,1], ref[:n,3])
     plt.show()
 
 # %%
