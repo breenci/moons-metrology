@@ -5,7 +5,7 @@ from get_corr import get_corr
 from coord_transform2 import matrix_transform
 
 
-def kabsch_umeyama(A, B):
+def kabsch_umeyama(A, B, scale=True):
     """Apply the Kabsch Uneyama algorithm"""
     
     # see https://web.stanford.edu/class/cs273/refs/umeyama.pdf
@@ -33,9 +33,15 @@ def kabsch_umeyama(A, B):
     t = A_cntr - np.matmul(c * R, B_cntr)
 
     # bring all together to create augmented transformation matrix
-    trans_mat = np.eye(4)
-    trans_mat[:3,:3] = c * R
-    trans_mat[:3,3] = t 
+    if scale == True:
+        trans_mat = np.eye(4)
+        trans_mat[:3,:3] = c * R
+        trans_mat[:3,3] = t
+
+    if scale == False:
+        trans_mat = np.eye(4)
+        trans_mat[:3,:3] = R
+        trans_mat[:3,3] = t
 
     return trans_mat
 
