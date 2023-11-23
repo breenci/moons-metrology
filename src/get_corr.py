@@ -3,7 +3,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
-from coord_transform2 import do_transform
+from src.coord_transform2 import do_transform
 
 plt.close('all')
 

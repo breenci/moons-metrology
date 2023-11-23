@@ -17,7 +17,7 @@ def plane_fitter(point_coords):
     norm = svd[:,2]
     
     # Take the +ve norm
-    if norm[1]>0:
+    if norm[1]<0:
         norm = -1*norm
     
     return norm, centroid
@@ -30,22 +30,22 @@ def change_basis(v1, v2, mode='xy'):
     unit2 = v2/np.sqrt(np.sum(v2**2))
     unit1 = v1/np.sqrt(np.sum(v1**2))
 
-    # find a vector perpendicular to the first two that will form a RH
-    # set of orthogonal unit vectors. Different modes ensure that system is RH
+    # find a vector perpendicular to the first two that will form a LH
+    # set of orthogonal unit vectors. Different modes ensure that system is LH
     if mode == 'xy':
         unit_x = unit1
         unit_y = unit2
-        unit_z = np.cross(unit_x, unit_y)
+        unit_z = np.cross(unit_y, unit_x)
 
     elif mode == 'xz':
         unit_x = unit1
         unit_z = unit2
-        unit_y = np.cross(unit_z, unit_x)
+        unit_y = np.cross(unit_x, unit_z)
 
     elif mode == 'yz':
         unit_y = unit1
         unit_z = unit2
-        unit_x = np.cross(unit_y, unit_z)
+        unit_x = np.cross(unit_z, unit_y)
 
     # Construct the change of basis matrix. Columns are the coordinate vectors 
     # of the new basis vectors in the old basis. 
@@ -65,24 +65,25 @@ def get_translate_mat(V_translation):
     return t_mat
 
 
-def get_pln_t_mat(pln_pnts, new_origin, y0):
+def get_pln_t_mat(pln_pnts, new_origin, z0):
     """Construct the transformation matrix for a transformation into new basis
-    with x defined by the normal of a plane and y defined by a point"""
+    with x defined by the normal of a plane and z defined by a point"""
     
     # fit a plane and find the unit normal
     new_x,_ = plane_fitter(pln_pnts)
 
     # Define the direction of the y basis vector.
-    # y_dir will lie in the xy plane
-    y_dir = y0 - new_origin
+    # z_dir will lie in the xz plane
+    z_dir = z0 - new_origin
 
-    # Z vector is perpendicular to the xy plane
-    new_z = np.cross(new_x, y_dir)
+    # y vector is perpendicular to the xz plane
+    new_y = np.cross(new_x, z_dir)
 
     #get change of basis (COB) and translation matrices
-    cob_mat = change_basis(new_x, new_z, mode='xz')
+    cob_mat = change_basis(new_x, new_y, mode='xy')
     t_mat = get_translate_mat(new_origin)
     hom_cob_mat = np.eye(4)
+
     # Note: COB matrix M defined as: old coords = M * new coords
     # -> M_inv * old_coords = M_transpose * old coords = new coords
     # This is why we take the transpose here
@@ -124,10 +125,16 @@ def project_point_to_plane(normal, point, pln_pnt=(0,0,0)):
     return new_point
 
 
-def do_transform(data, plane_inds, origin_ind, y0_ind):
+def do_transform(data, plane_inds, origin_ind, y0_ind, origin_mode='ind'):
     pln_pnts = data[plane_inds]
-    origin = data[origin_ind]
+    
     y0 = data[y0_ind]
+    
+    if origin_mode == 'pnt':
+        origin = origin_ind
+        
+    if origin_mode == 'ind':
+        origin = data[origin_ind]
 
     trans_mat = get_pln_t_mat(pln_pnts, origin, y0)
 
@@ -137,19 +144,12 @@ def do_transform(data, plane_inds, origin_ind, y0_ind):
 
 
 if __name__ == '__main__':
+    
+    cd_trgts = np.loadtxt("data/metrology_software_test_100fpus/pltcoords_ref_obj_codedtargets.txt")
+    coords = cd_trgts[:,1:4]
+    coords[:,0] = coords[:,0] - 178.4
 
-    ten_deg = np.loadtxt('caltest_25_03_22/10_deg.txt')
-    coords = ten_deg[:,1:4]
-
-    pln_inds = np.arange(1,17)
-    orgn_ind = 8
-    y0_ind = 7
-
-    transformed = do_transform(coords, pln_inds, orgn_ind, y0_ind)
-
-
-    plt.scatter(transformed[:,0], transformed[:,2])
-    plt.show()
+    norm, cntr = plane_fitter(coords)
 
 
     

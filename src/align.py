@@ -1,8 +1,7 @@
-# %%
 import numpy as np
 import matplotlib.pyplot as plt
-from get_corr import get_corr
-from coord_transform2 import matrix_transform
+from src.get_corr import get_corr
+from src.coord_transform2 import matrix_transform
 
 
 def kabsch_umeyama(A, B, scale=True):
@@ -30,15 +29,17 @@ def kabsch_umeyama(A, B, scale=True):
     # define rotation matrix (R), scaling factor (c) and translation (t) 
     R = np.matmul(np.matmul(U, S), VT)
     c = A_var / np.trace(np.matmul(np.diag(D), S))
-    t = A_cntr - np.matmul(c * R, B_cntr)
+    
 
     # bring all together to create augmented transformation matrix
     if scale is True:
+        t = A_cntr - np.matmul(c * R, B_cntr)
         trans_mat = np.eye(4)
         trans_mat[:3, :3] = c * R
         trans_mat[:3, 3] = t
 
     if scale is False:
+        t = A_cntr - np.matmul(R, B_cntr)
         trans_mat = np.eye(4)
         trans_mat[:3, :3] = R
         trans_mat[:3, 3] = t
@@ -46,7 +47,7 @@ def kabsch_umeyama(A, B, scale=True):
     return trans_mat
 
 
-def align_measurements(ref, unal, targ_ids):
+def align_measurements(ref, unal, targ_ids, scale=False):
     """Aligns point clouds with reference"""
     # load ref id and xyz
     # get targets from input ids
@@ -68,7 +69,7 @@ def align_measurements(ref, unal, targ_ids):
     unal_targs = unal[unal_idxs[common_targs_mask]]
 
     # get transformation matrix for the alignment using KU
-    al_mat = kabsch_umeyama(ref_targs[:, 1:4], unal_targs[:, 1:4], scale=False)
+    al_mat = kabsch_umeyama(ref_targs[:, 1:4], unal_targs[:, 1:4], scale=scale)
 
     # Do alignment and return aligned coords
     al_coords = matrix_transform(unal[:,1:4], al_mat)
@@ -124,7 +125,7 @@ if __name__ == '__main__':
     # scat = ax.scatter(srtd_mmask[:,1], srtd_mmask[:,2], c=rms_pnts)
     # cb = plt.colorbar(scat)
 
-    n=20
+    n=10000
     
     al_100 = align_from_file('data/temp_tests/measurement1_151122/temp_test1_151122.obc',
                                  'data/temp_tests/measurement3_151122/temp_test3_151122.obc',
@@ -133,9 +134,9 @@ if __name__ == '__main__':
     unal_100 = np.loadtxt('data/temp_tests/measurement3_151122/temp_test3_151122.obc')
 
     fig, ax = plt.subplots()
-    ax.scatter(al_100[:n,0], al_100[:n,2], color='b')
-    # ax.scatter(unal_100[120:130,1], unal_100[:,3], color='r')
-    ax.scatter(ref[:n,1], ref[:n,3])
+    ax.scatter(al_100[:n, 0], al_100[:n, 2], color='b')
+    ax.scatter(unal_100[:n, 1], unal_100[:, 3], color='r')
+    ax.scatter(ref[:n, 1], ref[:n, 3])
     plt.show()
 
 # %%
