@@ -1,3 +1,6 @@
+"""
+Module for aligning point clouds using the Kabsch-Umeyama algorithm
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 from src.get_corr import get_corr
@@ -138,5 +141,3 @@ if __name__ == '__main__':
     ax.scatter(unal_100[:n, 1], unal_100[:, 3], color='r')
     ax.scatter(ref[:n, 1], ref[:n, 3])
     plt.show()
-
-# %%

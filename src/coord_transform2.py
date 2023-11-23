@@ -1,4 +1,7 @@
-# %%
+"""
+Module for doing coordinate transformations for metrology measurements
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -150,7 +153,3 @@ if __name__ == '__main__':
     coords[:,0] = coords[:,0] - 178.4
 
     norm, cntr = plane_fitter(coords)
-
-
-    
-# %%

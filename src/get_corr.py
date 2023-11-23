@@ -1,11 +1,11 @@
-# %%
+"""
+Module for finding corresponding points between two datasets
+"""
 
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
 from src.coord_transform2 import do_transform
-
-plt.close('all')
 
 
 def rescale(mask1, mask2, ref1, ref2):
@@ -93,4 +93,3 @@ if __name__ == '__main__':
     cmask_pad[:, 1] = -1 * cmask_pad[:, 1]
 
     a, b = get_corr(met_mask, cmask_pad, (25, 11), (13, 0))
-# %%
