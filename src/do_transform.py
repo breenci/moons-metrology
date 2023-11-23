@@ -1,4 +1,9 @@
-# %%
+"""
+Code for transforming coordinates between pixel and plate coordinate.
+
+Author: Ciarán Breen
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
@@ -79,6 +84,3 @@ if __name__ == '__main__':
         plt.scatter(plt_coords[:, 0], plt_coords[:, 1], s=1)
 
     plt.show()
-
-# %%
-
