@@ -2,21 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
-
-
-def matrix_transform(coords, trans_mat):
-    """Do the matrix transformation"""
-
-    # pad input coords with ones to allow translation
-    pad_coords = np.vstack((coords.T, np.ones_like(coords[:, 0])))
-
-    # do transformation
-    pad_trans_coords = np.matmul(trans_mat, pad_coords)
-
-    # unpad
-    trans_coords = pad_trans_coords[:3, :].T
-
-    return trans_coords
+from src.coord_transform2 import matrix_transform
 
 
 def pix2plt(coords_arr, tmat_arr):
@@ -34,7 +20,7 @@ def pix2plt(coords_arr, tmat_arr):
 def plt2pix(coords_arr, mat_arr):
     """Transform from plate to pixel coordinate systems"""
 
-    # take psuedo inverse. Note: Assumes input matrix describes pixel to
+    # take inverse. Note: Assumes input matrix describes pixel to
     # plate transformation
     plt2pix_mat = np.linalg.inv(mat_arr)
 
@@ -55,7 +41,7 @@ def transform_from_file(coords_fn, mat_fn, out_fn=None, mode='pix2plt'):
     :type coords_fn: Numpy array with xyz values in columns
     :param mat_fn: Name of file containing transformation matrix
     :type mat_fn: 4 x 4 numpy array
-    :param out_fn: Path to saved output file
+    :param out_fn: Path to saved output file. If no path is given the output file is not saved.
     :type out_fn: str, optional
     :param mode: Specifies the direction of transformation, defaults to 'pix2plt'
     :type mode: str, optional
