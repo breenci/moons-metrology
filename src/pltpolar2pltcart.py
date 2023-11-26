@@ -1,3 +1,8 @@
+"""
+Module for doing coordinate transformations between cartesian and plate polar
+coordinate systems
+"""
+
 import numpy as np
 import matplotlib.pyplot as plt
 from do_transform import plt2pix

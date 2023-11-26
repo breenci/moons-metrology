@@ -1,5 +1,7 @@
+"""
+Module to filter spurious points from a metrology ouput point cloud
+"""
 
-# %%
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -126,8 +128,32 @@ def make_filter_output(fn, r=4101.1, c=[4101.1,0,0], rtol=4, sizes=[1.15,1.9,2.6
     ffltrd[:,1] = -1*ffltrd[:,1]
 
     return ffltrd
-    
 
+
+def points_in_box(coordinates, box_point, box_lengths):
+    """
+    Find indices of points within a 3D box defined by a point and lengths.
+
+    Parameters:
+    - coordinates: List of 3D coordinates (list of lists or numpy array).
+    - box_point: Reference point of the box (list or tuple of three values).
+    - box_lengths: Lengths of the box along each dimension (list or tuple of three values).
+
+    Returns:
+    - List of indices of points within the specified 3D box.
+    """
+    indices = []
+
+    for i, coord in enumerate(coordinates):
+        x_in_range = box_point[0] <= coord[0] <= box_point[0] + box_lengths[0]
+        y_in_range = box_point[1] <= coord[1] <= box_point[1] + box_lengths[1]
+        z_in_range = box_point[2] <= coord[2] <= box_point[2] + box_lengths[2]
+
+        if x_in_range and y_in_range and z_in_range:
+            indices.append(i)
+
+    return indices
+    
 
 if __name__ == '__main__':
 
