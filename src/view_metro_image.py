@@ -30,8 +30,12 @@ def add_brightness_mask(img_arr, sat_low, sat_high, colors=[[0, 0, 255], [255, 0
 def plot_images(image_files, sat_low=80, sat_high=200):
     num_images = len(image_files)
 
-    # Create a subplot grid with shared axes
-    fig, axes = plt.subplots(1, num_images, figsize=(15, 5), sharex=True, sharey=True)
+    # If there's only one image, create a single subplot
+    if num_images == 1:
+        fig, axes = plt.subplots(1, 1, figsize=(7, 5), sharex=True, sharey=True)
+    else:
+        # Create a subplot grid with shared axes
+        fig, axes = plt.subplots(1, num_images, figsize=(15, 5), sharex=True, sharey=True)
 
     for i, image_path in enumerate(image_files):
         # Read the image and convert to grayscale
@@ -47,9 +51,12 @@ def plot_images(image_files, sat_low=80, sat_high=200):
         img_3_channel = Image.fromarray(arr_3_channel)
 
         # Plot the image on the corresponding subplot
-        axes[i].imshow(img_3_channel, cmap='gray')
-        axes[i].axis('off')  # Turn off axis labels
-        axes[i].set_title(f'Image {i+1}')
+        if num_images == 1:
+            axes.imshow(img_3_channel, cmap='gray')
+            axes.axis('off')  # Turn off axis labels
+        else:
+            axes[i].imshow(img_3_channel, cmap='gray')
+            axes[i].axis('off')  # Turn off axis labels
 
     # Add a common title and show the plot
     plt.show()
