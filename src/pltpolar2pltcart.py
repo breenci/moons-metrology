@@ -5,7 +5,7 @@ coordinate systems
 
 import numpy as np
 import matplotlib.pyplot as plt
-from do_transform import plt2pix
+from src.do_transform import plt2pix
 
 
 def polar2cart(rho, theta, roc, angle_unit='rad'):
