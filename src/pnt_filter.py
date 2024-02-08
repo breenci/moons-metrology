@@ -69,9 +69,20 @@ def size_filter(coords, sizes, size_arr, tol):
 
     # Filter dataset using mask
     data_out = coords[in_bnds_mask]
-    sizes_out = sizes[in_bnds_mask]
+    sizes_class = sizes[in_bnds_mask]
 
-    return in_bnds_mask, data_out, sizes_out
+    return in_bnds_mask, data_out, sizes_class
+
+
+def lin_corr(coords, sizes, m):
+    """Function to filter points based on a linear size relationship"""
+    
+    D_rad = np.sqrt(np.sum(coords**2, axis=1))
+    
+    # Calculate the corrected size based on the linear relationship
+    corr_sizes = sizes - m*D_rad
+    
+    return corr_sizes
 
 
 def sphere_filter_pntcld(fn, r, c, tol):
@@ -129,6 +140,34 @@ def make_filter_output(fn, r=4101.1, c=[4101.1,0,0], rtol=4, sizes=[1.15,1.9,2.6
 
     return ffltrd
 
+
+def preprocess_pntcld(fn, r=4101.1, c=[4101.1,0,0], rtol=4, sizes=[1.15,1.9,2.6], 
+                      stol=.25, m=.1):
+    """Prepares point cloud for fpu identification"""
+    
+    # make input lists arrays 
+    c_arr = np.array(c)
+    size_arr = np.array(sizes)
+
+    # do sphere filtering
+    sp_fltrd_pc = sphere_filter_pntcld(fn, r, c_arr, rtol)
+
+    # correct sizes
+    sp_fltrd_pc[:,7] = lin_corr(sp_fltrd_pc[:,1:4], sp_fltrd_pc[:,7], m)
+    
+    # do size filtering
+    size_mask,_,new_sizes = size_filter(sp_fltrd_pc[:,1:4], sp_fltrd_pc[:,7], size_arr, stol)
+    ffltrd = sp_fltrd_pc[size_mask]
+    ffltrd[:, 7] = new_sizes
+    
+    # flip to left handed coordinate system
+    ffltrd[:,1] = -1*ffltrd[:,1]
+    
+    # algn to template
+    # TODO: add alignment function
+    
+    return ffltrd
+    
 
 def points_in_box(coordinates, box_point, box_lengths):
     """
@@ -193,5 +232,3 @@ if __name__ == '__main__':
     ax2.set_ylabel('Z (mm)')
     ax2.set_title('Filtered')
     plt.tight_layout()
-
-# %%
