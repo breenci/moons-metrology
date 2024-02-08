@@ -55,7 +55,12 @@ def size_filter(coords, sizes, size_arr, tol):
     # Define upper and lower bounds
     upper_bnds = size_arr + tol
     lower_bnds = size_arr - tol
-
+    
+    # raise an error is bnds overlap
+    diff = np.diff(size_arr)
+    if np.any(diff < 2*tol):
+        raise ValueError('Bounds overlap')
+    
     # Create logical mask for first set of bounds then loop through the other
     # bounds and update the mask with each loop
     in_bnds_mask = (sizes < upper_bnds[0]) & (sizes > lower_bnds[0])
