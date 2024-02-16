@@ -4,6 +4,7 @@ Module to filter spurious points from a metrology ouput point cloud
 
 import numpy as np
 import matplotlib.pyplot as plt
+from src.align import align_measurements, align_from_file
 
 
 def sphere_filter(coords, r, c, tol):
@@ -146,17 +147,28 @@ def make_filter_output(fn, r=4101.1, c=[4101.1,0,0], rtol=4, sizes=[1.15,1.9,2.6
     return ffltrd
 
 
-def preprocess_pntcld(fn, r=4101.1, c=[4101.1,0,0], rtol=4, sizes=[1.15,1.9,2.6], 
-                      stol=.25, m=.1):
+def preprocess_pntcld(fn, template_fn, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[1.15,1.9,2.6], 
+                      stol=.25, m=.0005, template_ids=np.arange(1, 200)):
     """Prepares point cloud for fpu identification"""
     
     # make input lists arrays 
     c_arr = np.array(c)
     size_arr = np.array(sizes)
+    
+    # load the point cloud file
+    pnt_cld = np.loadtxt(fn)
+    
+    # align to template
+    template_data = np.loadtxt(template_fn)
+    al_ffltrd = align_measurements(template_data, pnt_cld, template_ids)
 
     # do sphere filtering
-    sp_fltrd_pc = sphere_filter_pntcld(fn, r, c_arr, rtol)
-
+    sp_mask, sp_fltrd = sphere_filter(al_ffltrd, r, c_arr, rtol)
+    
+    sp_fltrd_pc = np.copy(pnt_cld)
+    sp_fltrd_pc = sp_fltrd_pc[sp_mask] 
+    sp_fltrd_pc[:,1:4] = sp_fltrd
+    
     # correct sizes
     sp_fltrd_pc[:,7] = lin_corr(sp_fltrd_pc[:,1:4], sp_fltrd_pc[:,7], m)
     
@@ -167,9 +179,6 @@ def preprocess_pntcld(fn, r=4101.1, c=[4101.1,0,0], rtol=4, sizes=[1.15,1.9,2.6]
     
     # flip to left handed coordinate system
     ffltrd[:,1] = -1*ffltrd[:,1]
-    
-    # algn to template
-    # TODO: add alignment function
     
     return ffltrd
     
@@ -201,39 +210,57 @@ def points_in_box(coordinates, box_point, box_lengths):
 
 if __name__ == '__main__':
 
-    # demonstration of the spherical filter on a test point cloud file
-    # load a test file
-    unfltrd = np.loadtxt('test_filter.txt')
+    # # demonstration of the spherical filter on a test point cloud file
+    # # load a test file
+    # unfltrd = np.loadtxt('test_filter.txt')
 
-    # do the sphere filtering. Radius of curvature of the plate is 4101.1mm, 
-    # centre is assumed to be directly above the zero point => c = (4101.1,0,0)
-    # tolerance = 4
-    fltrd = sphere_filter_pntcld('test_filter.txt',
-                                 4101.1, np.array([4101.1, 0, 0]), 4)
+    # # do the sphere filtering. Radius of curvature of the plate is 4101.1mm, 
+    # # centre is assumed to be directly above the zero point => c = (4101.1,0,0)
+    # # tolerance = 4
+    # fltrd = sphere_filter_pntcld('test_filter.txt',
+    #                              4101.1, np.array([4101.1, 0, 0]), 4)
 
-    # filter removes any points not on the spherical focal plane. Only fpu dots
-    # remain
-    fig, (ax1, ax2) = plt.subplots(1, 2)
-    ax1.scatter(unfltrd[:, 2], unfltrd[:, 3], s=1)
-    ax1.set_xlabel('Y (mm)')
-    ax1.set_ylabel('Z (mm)')
-    ax1.set_title('Unfiltered')
-    ax2.scatter(fltrd[:, 2], fltrd[:, 3], s=1)
-    ax2.set_xlabel('Y (mm)')
-    ax2.set_ylabel('Z (mm)')
-    ax2.set_title('Filtered')
-    plt.tight_layout()
+    # # filter removes any points not on the spherical focal plane. Only fpu dots
+    # # remain
+    # fig, (ax1, ax2) = plt.subplots(1, 2)
+    # ax1.scatter(unfltrd[:, 2], unfltrd[:, 3], s=1)
+    # ax1.set_xlabel('Y (mm)')
+    # ax1.set_ylabel('Z (mm)')
+    # ax1.set_title('Unfiltered')
+    # ax2.scatter(fltrd[:, 2], fltrd[:, 3], s=1)
+    # ax2.set_xlabel('Y (mm)')
+    # ax2.set_ylabel('Z (mm)')
+    # ax2.set_title('Filtered')
+    # plt.tight_layout()
 
 
-    ffltrd = make_filter_output('test_filter.txt', c=[4101.4,0,0])
+    # ffltrd = make_filter_output('test_filter.txt', c=[4101.4,0,0])
 
-    fig2, (ax1, ax2) = plt.subplots(1, 2)
-    ax1.scatter(unfltrd[:, 2], unfltrd[:, 3], s=1)
-    ax1.set_xlabel('Y (mm)')
-    ax1.set_ylabel('Z (mm)')
-    ax1.set_title('Unfiltered')
-    ax2.scatter(ffltrd[:, 2], ffltrd[:, 3], s=1)
-    ax2.set_xlabel('Y (mm)')
-    ax2.set_ylabel('Z (mm)')
-    ax2.set_title('Filtered')
-    plt.tight_layout()
+    # fig2, (ax1, ax2) = plt.subplots(1, 2)
+    # ax1.scatter(unfltrd[:, 2], unfltrd[:, 3], s=1)
+    # ax1.set_xlabel('Y (mm)')
+    # ax1.set_ylabel('Z (mm)')
+    # ax1.set_title('Unfiltered')
+    # ax2.scatter(ffltrd[:, 2], ffltrd[:, 3], s=1)
+    # ax2.set_xlabel('Y (mm)')
+    # ax2.set_ylabel('Z (mm)')
+    # ax2.set_title('Filtered')
+    # plt.tight_layout()
+    
+    coded_fn = 'data/FPM_011223/TEST_03_01/coded_targets_03_01_01.txt'
+    pnt_cloud_fn = 'data/FPM_011223/TEST_03_01/FPM_03_01_03.txt'
+    
+    preprocessed_data = preprocess_pntcld(pnt_cloud_fn, coded_fn, r=4101.1, c=[4101.4, 0, 0], 
+                                      stol=0.35)
+    
+    # plot the preprocessed data
+    fig, ax = plt.subplots()
+    ax.scatter(preprocessed_data[:, 2], preprocessed_data[:, 3], s=1)
+    ax.set_xlabel('Y (mm)')
+    ax.set_ylabel('Z (mm)')
+    ax.set_title('Preprocessed')
+    plt.show()
+    
+    
+    
+    
