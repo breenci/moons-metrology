@@ -4,7 +4,6 @@ Module to filter spurious points from a metrology ouput point cloud
 
 import numpy as np
 import matplotlib.pyplot as plt
-from src.align import align_measurements, align_from_file
 
 
 def sphere_filter(coords, r, c, tol):
@@ -147,7 +146,95 @@ def make_filter_output(fn, r=4101.1, c=[4101.1,0,0], rtol=4, sizes=[1.15,1.9,2.6
     return ffltrd
 
 
-def preprocess_pntcld(fn, template_fn, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[1.15,1.9,2.6], 
+def matrix_transform(coords, trans_mat):
+    """Do the matrix transformation"""
+
+    # pad input coords with ones to allow translation
+    pad_coords = np.vstack((coords.T, np.ones_like(coords[:,0])))
+
+    # do transformation
+    pad_trans_coords = np.matmul(trans_mat, pad_coords)
+
+    # unpad
+    trans_coords = pad_trans_coords[:3,:].T
+
+    return trans_coords
+
+
+def kabsch_umeyama(A, B, scale=True):
+    """Apply the Kabsch Uneyama algorithm"""
+
+    # see https://web.stanford.edu/class/cs273/refs/umeyama.pdf
+    n, m = A.shape
+
+    # get mean vector of A and B
+    A_cntr = np.mean(A, axis=0)
+    B_cntr = np.mean(B, axis=0)
+
+    # calculate the variance of A
+    A_var = np.mean(np.linalg.norm(A - A_cntr, axis=1) ** 2)
+
+    # get the covariance matrix of A and B and do SVD 
+    covar_mat = np.matmul((A - A_cntr).T, (B - B_cntr)) / n
+    U, D, VT = np.linalg.svd(covar_mat)
+
+    # S = identity matrix if Det(U)*Det(V) = 1
+    # S = Diag(1,...,1,-1) if Det(U)*Det(V) = -1
+    d = np.sign(np.linalg.det(U) * np.linalg.det(VT))
+    S = np.diag([1] * (m - 1) + [d])
+
+    # define rotation matrix (R), scaling factor (c) and translation (t) 
+    R = np.matmul(np.matmul(U, S), VT)
+    c = A_var / np.trace(np.matmul(np.diag(D), S))
+    
+
+    # bring all together to create augmented transformation matrix
+    if scale is True:
+        t = A_cntr - np.matmul(c * R, B_cntr)
+        trans_mat = np.eye(4)
+        trans_mat[:3, :3] = c * R
+        trans_mat[:3, 3] = t
+
+    if scale is False:
+        t = A_cntr - np.matmul(R, B_cntr)
+        trans_mat = np.eye(4)
+        trans_mat[:3, :3] = R
+        trans_mat[:3, 3] = t
+
+    return trans_mat
+
+
+def align_measurements(ref, unal, targ_ids, scale=False):
+    """Aligns point clouds with reference"""
+    # load ref id and xyz
+    # get targets from input ids
+    ref_ids = ref[:, 0]
+
+    # load each unaligned data set and align to ref using KU
+    unal_ids = unal[:, 0]
+
+    # Only use reference targets that are detected in both datasets
+    # Use ids to find these targets
+    common_ids, ref_idxs, unal_idxs = np.intersect1d(ref_ids, unal_ids, 
+                                                     return_indices=True)
+
+    # Mask to select targets
+    common_targs_mask = np.isin(common_ids, targ_ids)
+
+    # get position of targets in reference and unaligned datasets
+    ref_targs = ref[ref_idxs[common_targs_mask]]
+    unal_targs = unal[unal_idxs[common_targs_mask]]
+
+    # get transformation matrix for the alignment using KU
+    al_mat = kabsch_umeyama(ref_targs[:, 1:4], unal_targs[:, 1:4], scale=scale)
+
+    # Do alignment and return aligned coords
+    al_coords = matrix_transform(unal[:,1:4], al_mat)
+
+    return al_coords
+
+
+def preprocess_pntcld(fn, align_ref_fn, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[1.15,1.9,2.6], 
                       stol=.35, m=.0005, template_ids=np.arange(1, 200)):
     """Prepares point cloud for fpu identification"""
     
@@ -159,7 +246,7 @@ def preprocess_pntcld(fn, template_fn, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[
     pnt_cld = np.loadtxt(fn)
     
     # align to template
-    template_data = np.loadtxt(template_fn)
+    template_data = np.loadtxt(align_ref_fn)
     al_ffltrd = align_measurements(template_data, pnt_cld, template_ids)
 
     # do sphere filtering
@@ -183,80 +270,23 @@ def preprocess_pntcld(fn, template_fn, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[
     return ffltrd
     
 
-def points_in_box(coordinates, box_point, box_lengths):
-    """
-    Find indices of points within a 3D box defined by a point and lengths.
-
-    Parameters:
-    - coordinates: List of 3D coordinates (list of lists or numpy array).
-    - box_point: Reference point of the box (list or tuple of three values).
-    - box_lengths: Lengths of the box along each dimension (list or tuple of three values).
-
-    Returns:
-    - List of indices of points within the specified 3D box.
-    """
-    indices = []
-
-    for i, coord in enumerate(coordinates):
-        x_in_range = box_point[0] <= coord[0] <= box_point[0] + box_lengths[0]
-        y_in_range = box_point[1] <= coord[1] <= box_point[1] + box_lengths[1]
-        z_in_range = box_point[2] <= coord[2] <= box_point[2] + box_lengths[2]
-
-        if x_in_range and y_in_range and z_in_range:
-            indices.append(i)
-
-    return indices
-    
-
 if __name__ == '__main__':
 
-    # # demonstration of the spherical filter on a test point cloud file
-    # # load a test file
-    # unfltrd = np.loadtxt('test_filter.txt')
-
-    # # do the sphere filtering. Radius of curvature of the plate is 4101.1mm, 
-    # # centre is assumed to be directly above the zero point => c = (4101.1,0,0)
-    # # tolerance = 4
-    # fltrd = sphere_filter_pntcld('test_filter.txt',
-    #                              4101.1, np.array([4101.1, 0, 0]), 4)
-
-    # # filter removes any points not on the spherical focal plane. Only fpu dots
-    # # remain
-    # fig, (ax1, ax2) = plt.subplots(1, 2)
-    # ax1.scatter(unfltrd[:, 2], unfltrd[:, 3], s=1)
-    # ax1.set_xlabel('Y (mm)')
-    # ax1.set_ylabel('Z (mm)')
-    # ax1.set_title('Unfiltered')
-    # ax2.scatter(fltrd[:, 2], fltrd[:, 3], s=1)
-    # ax2.set_xlabel('Y (mm)')
-    # ax2.set_ylabel('Z (mm)')
-    # ax2.set_title('Filtered')
-    # plt.tight_layout()
-
-
-    # ffltrd = make_filter_output('test_filter.txt', c=[4101.4,0,0])
-
-    # fig2, (ax1, ax2) = plt.subplots(1, 2)
-    # ax1.scatter(unfltrd[:, 2], unfltrd[:, 3], s=1)
-    # ax1.set_xlabel('Y (mm)')
-    # ax1.set_ylabel('Z (mm)')
-    # ax1.set_title('Unfiltered')
-    # ax2.scatter(ffltrd[:, 2], ffltrd[:, 3], s=1)
-    # ax2.set_xlabel('Y (mm)')
-    # ax2.set_ylabel('Z (mm)')
-    # ax2.set_title('Filtered')
-    # plt.tight_layout()
-    
-    coded_fn = 'data/FPM_011223/TEST_03_01/coded_targets_03_01_01.txt'
+    coded_fn = 'data/FULLPLATE_250923/FULLPLATE_01_01_01_TEM/FULLPLATE_01_01_01_TEM_HIN.txt'
     pnt_cloud_fn = 'data/FPM_011223/TEST_03_01/FPM_03_01_03.txt'
     
     preprocessed_data = preprocess_pntcld(pnt_cloud_fn, coded_fn, r=4101.1, c=[4101.4, 0, 0], 
                                       stol=0.35)
     
-    # plot the preprocessed data
-    fig, ax = plt.subplots()
-    ax.scatter(preprocessed_data[:, 2], preprocessed_data[:, 3], s=1)
-    ax.set_xlabel('Y (mm)')
-    ax.set_ylabel('Z (mm)')
-    ax.set_title('Preprocessed')
+    # plot the raw data
+    raw_data = np.loadtxt(pnt_cloud_fn)
+    template_data = np.loadtxt(coded_fn)
+    fig, ax = plt.subplots(1,2, sharey=True, sharex=True)
+    ax[0].scatter(raw_data[:, 2], raw_data[:, 3], s=1)
+    ax[0].set_ylabel('Z (mm)')
+    ax[0].set_xlabel('Y (mm)')
+    ax[1].scatter(preprocessed_data[:, 2], preprocessed_data[:, 3], s=1)
+    ax[1].scatter(template_data[:, 2], template_data[:, 3], s=1)
+    ax[1].set_xlabel('Y (mm)')
+    ax[1].set_title('Preprocessed')
     plt.show()
