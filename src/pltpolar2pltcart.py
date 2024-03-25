@@ -5,7 +5,9 @@ coordinate systems
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from src.do_transform import plt2pix
+from src.calibrations import read_FPU_out
 
 
 def polar2cart(rho, theta, roc, angle_unit='rad'):
@@ -25,8 +27,8 @@ def polar2cart(rho, theta, roc, angle_unit='rad'):
 
     # covert to radians if necessary
     if angle_unit == 'deg':
-        rho_rad = rho * (180/np.pi)
-        theta_rad = theta * (180/np.pi)
+        rho_rad = rho
+        theta_rad = np.deg2rad(theta)
 
     elif angle_unit == 'rad':
         rho_rad = rho
@@ -47,40 +49,26 @@ def polar2cart(rho, theta, roc, angle_unit='rad'):
 
 
 if __name__ == '__main__':
-    # ACQ6
-    rho6 = 158.331147  # in mm
-    theta6 = 2.335426  # in rad
-    plt_roc = 4101.8  # in mm
-
-    # ACQ17
-    rho17 = 410.535532
-    theta17 = 5.257187
-
-    # ACQ20
-    rho20 = 392.96983
-    theta20 = 0.688058
-
-    # get x,y,z and plot
-    rhos = np.array([rho6, rho17, rho20])
-    thetas = np.array([theta6, theta17, theta20])
-    labels = np.array(["ACQ6", "ACQ17", "ACQ20"])
-
-    x, y, z = polar2cart(rhos, thetas, plt_roc)
-
-    fig, ax1 = plt.subplots()
-    for i in range(len(x)):
-        ax1.scatter(y[i], z[i], label=labels[i])
-    ax1.scatter(0, 0, label="Origin")
-    ax1.set_ylabel("Y (mm)")
-    ax1.set_xlabel("Z (mm)")
-    plt.legend()
+    # load in the data
+    new_cntrs_fn = 'data/FPU_calibrations/FPUCAL_03/FPU_ALPHA_CENTRES/results20240325-092858.csv'
+    old_met_cntrs_fn = 'data/FULLPLATE_250923/FULLPLATE_10/Positioners-Centers-260224.txt'
+    
+    new_cntrs = pd.read_csv(new_cntrs_fn)
+    old_cntrs = np.loadtxt(old_met_cntrs_fn)
+    
+    # convert old centres to cartesian
+    new_x, new_y, new_z = polar2cart(new_cntrs['r_centre'], new_cntrs['theta_centre'], 4101.1, angle_unit='deg')
+    
+    # plot the new and old centres
+    fig, ax = plt.subplots()
+    ax.scatter(new_y, new_z, label='New Centres')
+    ax.scatter(old_cntrs[:,6], old_cntrs[:,7], label='Old Centres')
+    ax.scatter(new_y[0], new_z[0], label='FPU 12', color='red')
+    ax.scatter(old_cntrs[0,6], old_cntrs[0,7], label='FPU 12', color='red')
+    ax.set_xlabel('Y (mm)')
+    ax.set_ylabel('Z (mm)')
     plt.show()
-
-    pos6 = np.expand_dims(np.array([x[0], y[0], z[0]]), axis=0)
-    pix6 = plt2pix(pos6, np.loadtxt("data/mask_test/AC_mats/t_mat_AC6.txt"))
-
-    pos17 = np.expand_dims(np.array([x[1], y[1], z[1]]), axis=0)
-    pix17 = plt2pix(pos6, np.loadtxt("data/mask_test/AC_mats/t_mat_AC17.txt"))
-
-    pos20 = np.expand_dims(np.array([x[2], y[2], z[2]]), axis=0)
-    pix20 = plt2pix(pos20, np.loadtxt("data/mask_test/AC_mats/t_mat_AC20.txt"))
+    
+    
+    
+    
