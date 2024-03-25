@@ -6,8 +6,6 @@ coordinate systems
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from src.do_transform import plt2pix
-from src.calibrations import read_FPU_out
 
 
 def polar2cart(rho, theta, roc, angle_unit='rad'):
@@ -49,17 +47,19 @@ def polar2cart(rho, theta, roc, angle_unit='rad'):
 
 
 if __name__ == '__main__':
-    # load in the data
+    # recent centres file provided by GS
     new_cntrs_fn = 'data/FPU_calibrations/FPUCAL_03/FPU_ALPHA_CENTRES/results20240325-092858.csv'
+    # old metrology centres file for reference
     old_met_cntrs_fn = 'data/FULLPLATE_250923/FULLPLATE_10/Positioners-Centers-260224.txt'
     
+    # load the data
     new_cntrs = pd.read_csv(new_cntrs_fn)
     old_cntrs = np.loadtxt(old_met_cntrs_fn)
     
-    # convert old centres to cartesian
+    # convert new centres to cartesian
     new_x, new_y, new_z = polar2cart(new_cntrs['r_centre'], new_cntrs['theta_centre'], 4101.1, angle_unit='deg')
     
-    # plot the new and old centres
+    # plot the new and old centres to confirm that the conversion is correct
     fig, ax = plt.subplots()
     ax.scatter(new_y, new_z, label='New Centres')
     ax.scatter(old_cntrs[:,6], old_cntrs[:,7], label='Old Centres')
