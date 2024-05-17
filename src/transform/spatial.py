@@ -1,10 +1,7 @@
 """
 Module for doing coordinate transformations for metrology measurements
 """
-
 import numpy as np
-import matplotlib.pyplot as plt
-
 
 def plane_fitter(point_coords):
     '''Fit a plane to a set of points and return the unit normal.'''

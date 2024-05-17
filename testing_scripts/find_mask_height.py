@@ -2,7 +2,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from src.preprocessing import preprocess_pntcld, sphere_filter
+from src.preprocessing import sphere_filter
 from src.pnt_filter import points_in_box
 from src.transform.spatial import plane_fitter
 from skspatial.objects import Line, Sphere

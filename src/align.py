@@ -3,9 +3,7 @@ Module for aligning point clouds using the Kabsch-Umeyama algorithm
 """
 import numpy as np
 import matplotlib.pyplot as plt
-from src.get_corr import get_corr
 from src.transform.spatial import matrix_transform
-
 
 def kabsch_umeyama(A, B, scale=True):
     """Apply the Kabsch Uneyama algorithm"""
