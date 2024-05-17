@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from src.preprocessing import preprocess_pntcld, sphere_filter
 from src.pnt_filter import points_in_box
-from coord_transform2 import plane_fitter
+from src.transform.spatial import plane_fitter
 from skspatial.objects import Line, Sphere
 
 
@@ -170,7 +170,7 @@ if __name__ == "__main__":
     # find the X value for the plane
     Xp = find_point_on_plane(norm[0][0], norm[0][1], norm[0][2], D[0], [Y, Z], missing_coord='x')
     # find the X values for the sphere. There are two solutions
-    Xs = find_x_sphere_point(r, [cntrx, cntry, cntrz], [Y, Z], missing_coord='x')
+    Xs = find_x_sphere_point(r, [cntrx, cntry, cntrz], [Y, Z])
     
     # get the mask points
     ac1_mask = mask_points[ID]
@@ -199,11 +199,3 @@ if __name__ == "__main__":
     ax.set_ylabel('Z (mm)')
     fig.colorbar(sct, ax=ax, label='Height Difference (mm)')
     plt.show()
-    
-    
-    
-    
-    
-    
-    
-

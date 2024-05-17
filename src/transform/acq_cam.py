@@ -7,12 +7,11 @@ Author: Ciarán Breen
 import numpy as np
 import matplotlib.pyplot as plt
 import glob
-from src.coord_transform2 import matrix_transform
+from src.transform.spatial import matrix_transform
 
 
 def pix2plt(coords_arr, tmat_arr):
     """Transform from pixel to plate coordinate systems"""
-
     # pad z
     pad_coords = np.insert(coords_arr, 2, 0, axis=1)
 
@@ -75,12 +74,13 @@ def transform_from_file(coords_fn, mat_fn, out_fn=None, mode='pix2plt'):
 
 
 if __name__ == '__main__':
-
+    
+    fig, ax = plt.subplots()
     for mask in np.sort(glob.glob('dummy_trans_mats/*')):
         mask_id = mask[23:25]
 
         plt_coords = transform_from_file('mask_test/mask_AC_01.txt', mask)
 
-        plt.scatter(plt_coords[:, 0], plt_coords[:, 1], s=1)
+        ax.scatter(plt_coords[:, 0], plt_coords[:, 1], s=1)
 
     plt.show()

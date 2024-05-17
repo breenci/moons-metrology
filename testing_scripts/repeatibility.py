@@ -6,7 +6,7 @@ This script is used to calculate the repeatibility of FPU measurements.
 import numpy as np
 import matplotlib.pyplot as plt
 from src.metro_io import read_metro_out, read_FPU_out, read_fibmap
-from src.pltpolar2pltcart import polar2cart
+from src.transform.plate import polar2cart
 import pandas as pd
 from src.get_corr import match_near_nbrs
 

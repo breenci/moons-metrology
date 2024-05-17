@@ -5,7 +5,7 @@ Module for finding corresponding points between two datasets
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
-from src.coord_transform2 import do_transform
+from src.transform.spatial import do_transform
 
 
 def rescale(mask1, mask2, ref1, ref2):
