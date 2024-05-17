@@ -151,16 +151,19 @@ def find_offset(fn_list, centres_fn, expected_angles, alpha_0=142, mode='alpha',
     for i in range(Y_corr.shape[1]):
         if type(alpha_0) == int:
             Y_rot[:,i], Z_rot[:,i] = rotate_data(Y_corr[:,i], Z_corr[:,i], alpha_0)
-        if type(alpha_0) == np.ndarray:
+        elif type(alpha_0) == np.ndarray:
             for j in range(Y_corr.shape[0]):
                 Y_rot_arr, Z_rot_arr = rotate_data(Y_corr[j, i], Z_corr[j, i], alpha_0[j])
                 Y_rot[j, i] = Y_rot_arr[0]
                 Z_rot[j, i] = Z_rot_arr[0]
-                
+        else:
+            raise ValueError("alpha_0 must be an integer or an array")
+        
     if mode == 'beta':
         arm_lengths = pd.read_csv(arm_length_fn).sort_values(by='fpu_id', ignore_index=True)
         L_alpha = arm_lengths['alpha_length']
         
+        # TODO: remove this for the actual arm lengths
         # Y_beta_rot = Y_beta_rot + L_alpha.to_numpy().reshape(-1,1)
         Y_rot = Y_rot + 8
     
@@ -169,50 +172,63 @@ def find_offset(fn_list, centres_fn, expected_angles, alpha_0=142, mode='alpha',
     
     theta_diff = theta_rot - expected_angles
     
+    # convert to dataframe with fpu ids as index
+    theta_diff_df = pd.DataFrame(theta_diff, columns=[str(exp) for exp in expected_angles], 
+                                 index=Y_df.index)
+    
     # plot the data
     fig, ax = plt.subplots(figsize=(10,10))
-    for i in range(1,9):
+    for i in range(Y_corr.shape[1]):
         ax.scatter(Y_rot[:,i-1], Z_rot[:,i-1],
                    s=10)
         ax.set_aspect('equal')
     
     fig, ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(10,10))
-    for i in range(1,9):
+    for i in range(1, Y_corr.shape[1]):
         ax.scatter(np.deg2rad(theta_rot[:,i-1]), r_rot[:,i-1],
                    s=10)
-    plt.show()
     
-    return theta_diff
+    return theta_diff_df
     
     
 if __name__ == "__main__":
-    # get the data
+    # get the data intermediate for alpha, metrology output for beta
     inter_data_fns = sorted(glob.glob("data/FPU_calibrations/FPUCAL_MAY24/simulated_data/FPU_ARM_LENGTH_DATA_WITH_NOISE/**/arm_length_intermediate_data.csv", recursive=True))
     beta_data_fns = sorted(glob.glob("data/FPU_calibrations/FPUCAL_MAY24/simulated_data/FPU_ARM_LENGTH_DATA_WITH_NOISE/ALPHA_POSITION_1_2024-05-05T160410/*txt"))
     
-    print(beta_data_fns)
+    # id of fpu to plot
+    report_id = 1052
+    
     cntrs_fn = "data/FPU_calibrations/FPUCAL_MAY24/simulated_data/FPU_ARM_LENGTH_DATA_WITH_NOISE/fpu_centres.csv"
     arm_length_fn='data/FPU_calibrations/FPUCAL_MAY24/simulated_data/FPU_ARM_LENGTH_DATA_WITH_NOISE/arm_length_data.csv'
     
-    expected_theta = np.array([-180., -137.625, -95.25, -52.875, -10.5, 31.875, 
+    expected_alpha = np.array([-180., -137.625, -95.25, -52.875, -10.5, 31.875, 
                                74.25, 116.625])
     expected_beta = np.array([-172., -132.125, -92.25, -52.375, -12.5, 27.375, 
                               67.25, 107.125])
     
     # wrap the angles
-    expected_theta[expected_theta < 0] += 360
+    expected_alpha[expected_alpha < 0] += 360
     expected_beta[expected_beta < 0] += 360
     
-    # TODO: alpha0 should be an array
     alpha0 = 142
-    theta_diff = find_offset(inter_data_fns, cntrs_fn, expected_theta)
-                             
-    theta_diff_mean = np.mean(theta_diff, axis=1)
-    alpha_offset = theta_diff_mean + alpha0
+    alpha_diff = find_offset(inter_data_fns, cntrs_fn, expected_alpha)
+                                 
+    alpha_diff_mean = np.mean(alpha_diff.to_numpy(), axis=1)
     
-
+    alpha_offset = alpha_diff_mean + alpha0
+    
     beta_diff = find_offset(beta_data_fns, cntrs_fn, expected_beta, mode='beta',
                             arm_length_fn=arm_length_fn, alpha_0=alpha_offset)
     
     beta_diff_mean = np.mean(beta_diff, axis=1)
-        
+    
+    # plot the given fpu
+    fig, ax = plt.subplots()
+    ax.scatter(expected_alpha, alpha_diff.loc[report_id], label='Alpha')
+    ax.scatter(expected_beta, beta_diff.loc[report_id], label='Beta')
+    ax.set_title('FPU ID: ' + str(report_id))
+    ax.set_xlabel('Expected Angle (degrees)')
+    ax.set_ylabel('Mean Difference (degrees)')
+    ax.legend()
+    plt.show()
