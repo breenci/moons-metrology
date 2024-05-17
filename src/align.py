@@ -6,7 +6,17 @@ import matplotlib.pyplot as plt
 from src.transform.spatial import matrix_transform
 
 def kabsch_umeyama(A, B, scale=True):
-    """Apply the Kabsch Uneyama algorithm"""
+    """Apply the Kabsch Uneyama algorithm to align two point clouds
+
+    :param A: reference point cloud
+    :type A: numpy.ndarray
+    :param B: point cloud to be aligned
+    :type B: numpy.ndarray
+    :param scale: allow scaling in tranformation, defaults to True
+    :type scale: bool, optional
+    :return: transformation matrix for alignment of B to A
+    :rtype: numpy.ndarray
+    """
 
     # see https://web.stanford.edu/class/cs273/refs/umeyama.pdf
     n, m = A.shape
@@ -49,7 +59,19 @@ def kabsch_umeyama(A, B, scale=True):
 
 
 def align_measurements(ref, unal, targ_ids, scale=False):
-    """Aligns point clouds with reference"""
+    """Aligns reference and unaligned datasets using Kabsch-Umeyama algorithm
+
+    :param ref: reference dataset
+    :type ref: numpy.ndarray
+    :param unal: unaligned dataset
+    :type unal: numpy.ndarray
+    :param targ_ids: ids of points to be used in alignment
+    :type targ_ids: numpy.ndarray
+    :param scale: allow scling in transformation, defaults to False
+    :type scale: bool, optional
+    :return: aligned coordinates
+    :rtype: numpy.ndarray
+    """
     # load ref id and xyz
     # get targets from input ids
     ref_ids = ref[:, 0]

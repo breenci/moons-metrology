@@ -2,7 +2,6 @@
 This module contains functions for reading and writing data from metrology and 
 FPU output files.    
 """
-import numpy as np
 import pandas as pd
 
 def read_metro_out(fn):

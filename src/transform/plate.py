@@ -17,7 +17,8 @@ def polar2cart(rho, theta, roc, angle_unit='rad'):
     :type theta: float
     :param roc: Radius of curvature of plate
     :type roc: float
-    :param angle_unit: unit for input angles. Radians or degrees, defaults to 'rad'
+    :param angle_unit: unit for input angles. Radians ('rad') or degrees ('deg')
+        , defaults to 'rad'
     :type angle_unit: str, optional
     :return: Plate cartesian coordinates of target
     :rtype: tuple

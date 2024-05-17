@@ -4,7 +4,7 @@ Module to filter spurious points from a metrology ouput point cloud
 
 import numpy as np
 import matplotlib.pyplot as plt
-from src.align import align_measurements, align_from_file
+from src.align import align_measurements
 
 
 def sphere_filter(coords, r, c, tol):
