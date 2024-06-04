@@ -26,6 +26,7 @@ def read_hexout(fn, exp_pos_fn, dot_type=2.6):
     exp_idx, raw_idx = match_near_nbrs(exp_cart, fib_dots[:,1:4], 2)
     
     fib_sorted = fib_dots[raw_idx, 1:4]
+    print(fib_dots[raw_idx, 7])
     data_out = pd.DataFrame(fib_sorted, columns=['X', 'Y', 'Z'])
     data_out['ID'] = exp_pos['ID'].iloc[exp_idx]
     
@@ -33,8 +34,13 @@ def read_hexout(fn, exp_pos_fn, dot_type=2.6):
 
 # define the file names
 # ref_fn is the file to which the fn_list files are compared
-ref_fn = 'data/FPU_calibrations/FPUCAL_MAR24/FPUCAL_01.01_METR_DAT/FPU_polar_coordinates_01_01.txt'
-fn_list = ['data/FPU_calibrations/FPUCAL_MAR24/FPUCAL_01.01_METR_DAT/FPU_polar_coordinates_01_01.txt']
+# ref_fn = 'data/FPU_calibrations/FPUCAL_MAY24/repeatability/run2/Coordinates_file_filtered.txt'
+# fn_list = ['data/FPU_calibrations/FPUCAL_MAY24/repeatability/run3/Coordinates_file_filtered.txt',
+#            'data/FPU_calibrations/FPUCAL_MAY24/repeatability/run4/Coordinates_file_filtered.txt',
+#            'data/FPU_calibrations/FPUCAL_MAY24/repeatability/run5/Coordinates_file_filtered.txt']
+ref_fn = 'data/FPU_calibrations/FPUCAL_MAY24/repeatability/run2/FPU_Fiber_Mapping.txt'
+fn_list = ['data/FPU_calibrations/FPUCAL_MAY24/repeatability/run3/FPU_Fiber_Mapping.txt',
+           'data/FPU_calibrations/FPUCAL_MAY24/repeatability/run5/FPU_Fiber_Mapping.txt']
 # exp_pos_fn is the file containing the expected positions of the FPU for 
 # the HEXOUT data
 exp_pos_fn = "data/FPU_calibrations/FPUCAL_MAR24/FPUCAL_01.01_FPU_CONTROL.txt"
@@ -48,7 +54,7 @@ if ref_type == "METOUT":
     ref_data = read_metro_out(ref_fn).sort_values(by='ID', ignore_index=True)
 
     # convert to cartesian
-    ref_X, ref_Y, ref_Z = polar2cart(ref_data['R'], np.deg2rad(ref_data['Theta']), 4101.4)
+    ref_X, ref_Y, ref_Z = polar2cart(ref_data['R'], np.deg2rad(ref_data['Theta']), 4101.1)
     
 elif ref_type == "FIBMAP":
     ref_data = read_fibmap(ref_fn).sort_values(by='ID', ignore_index=True)
@@ -128,7 +134,12 @@ axes[2].set_xlabel('FPU ID')
 # plot the differrence in space (Y, Z plane)
 fig_space, ax = plt.subplots(figsize=(10, 10))
 for i in range(diff_cube.shape[2]):
-    ax.scatter(diff_cube[:,1,i], diff_cube[:,2,i], label=fn_list[i])
+    ax.scatter(diff_cube[:,1,i], diff_cube[:,2,i], label="run "+str(i+1), s=1)
+ax.set_xlabel('Y Difference (mm)')
+ax.set_ylabel('Z Difference (mm)')
+ax.grid()
+plt.legend()
+
 # plot the mean and max difference
 mean_err = np.mean(np.abs(diff_cube), axis=2)
 max_err = np.max(np.abs(diff_cube), axis=2)
