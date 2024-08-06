@@ -24,8 +24,8 @@ def pix2plt(coords_arr, tmat_arr):
     :type tmat_arr: numpy.ndarray
     :return: Transformed coordinates
     """
-    # pad z
-    pad_coords = np.insert(coords_arr, 2, 0, axis=1)
+    # pad x
+    pad_coords = np.insert(coords_arr, 0, 0, axis=1)
 
     # do transform
     out_coords = matrix_transform(pad_coords, tmat_arr)
@@ -51,7 +51,7 @@ def plt2pix(coords_arr, mat_arr):
     plt_in_pix = matrix_transform(coords_arr, plt2pix_mat)
 
     # remove z axis
-    out_coords = plt_in_pix[:, 0:2]
+    out_coords = plt_in_pix[:, 1:3]
 
     return out_coords
 
