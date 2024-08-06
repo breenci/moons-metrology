@@ -18,6 +18,7 @@ def read_FPU_out(fn):
                          index_col=False, usecols=[0, 1, 2, 3])
     return fpu_df
 
+
 def read_fibmap(fn):
     """Read the fibre map"""
     colnames = ['ID', 'X', 'Y', 'Z']
@@ -25,3 +26,11 @@ def read_fibmap(fn):
                             usecols=[0, 13, 14, 15])
     
     return fibmap_df
+
+
+def read_metro_raw(fn):
+    """Read the raw metrology output"""
+    colnames = ['ID', 'X', 'Y', 'Z', 'errX', 'errY', 'errZ', 'S']
+    raw_df = pd.read_csv(fn, sep=' ', header=None, names=colnames)
+    return raw_df
+    
