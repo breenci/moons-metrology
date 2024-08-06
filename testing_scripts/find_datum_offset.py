@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 import pandas as pd
 import glob
 from src.metro_io import read_metro_out, read_FPU_out
@@ -179,24 +180,42 @@ def find_offset(fn_list, centres_fn, expected_angles, alpha_0=142, mode='alpha',
     # plot the data
     fig, ax = plt.subplots(figsize=(10,10))
     for i in range(Y_corr.shape[1]):
-        print(i)
         if mode == 'alpha':
             ax.title.set_text('Alpha')
         elif mode == 'beta':
             ax.title.set_text('Beta')
         ax.scatter(Y_rot[:,i], Z_rot[:,i],
-                   s=10)
-        ax.set_aspect('equal')
-    
-    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(10,10))
-    for i in range(Y_corr.shape[1]):
+                   s=1, label=str(expected_angles[i]) + '$^{\circ}$', alpha=0.1)
         if mode == 'alpha':
-            ax.title.set_text('Alpha')
-        elif mode == 'beta':
-            ax.title.set_text('Beta')
+            ax.plot([0, 8*np.cos(np.deg2rad(expected_angles[i]))], 
+                    [0, 8*np.sin(np.deg2rad(expected_angles[i]))],
+                    linestyle='--')
+        if mode == 'beta':
+            ax.plot([0, 17*np.cos(np.deg2rad(expected_angles[i]))], 
+                    [0, 17*np.sin(np.deg2rad(expected_angles[i]))],
+                    linestyle='--')
+    ax.set_aspect('equal')
+    ax.grid()
+    ax.set_xlabel('Y (mm)')
+    ax.set_ylabel('Z (mm)')
+    ax.legend(markerscale=10, title='Expected Angle')
+    
+    fig, ax = plt.subplots(subplot_kw={'projection': 'polar'}, figsize=(10,8))
+    for i in range(Y_corr.shape[1]):
         ax.scatter(np.deg2rad(theta_rot[:,i]), r_rot[:,i],
                    s=1, label=str(expected_angles[i]) + '$^{\circ}$')
-    ax.legend(markerscale=10, title='Expected Angle')
+    if mode == 'alpha':
+        ax.set_title('Alpha Offset', fontdict={'fontsize': 20})
+        ax.set_rmax(10)
+        ax.set_rticks([2, 4, 6, 8, 10])
+    elif mode == 'beta':
+        ax.set_title('Beta Offset', fontdict={'fontsize': 20})
+        ax.set_rmax(20)
+        ax.set_rticks([5, 10, 15, 20])
+    ax.tick_params(labelsize=12)
+    ax.legend(markerscale=10, title='Expected Angle', bbox_to_anchor=(1.2, 1), 
+              title_fontsize=12)
+    plt.tight_layout()
     return theta_diff_df
     
     
@@ -206,7 +225,7 @@ if __name__ == "__main__":
     beta_data_fns = sorted(glob.glob("data/FPU_calibrations/FPUCAL_MAY24/FPU_ARM_LENGTH_DATA_2024-05-28T231144/ALPHA_POSITION_0_2024-05-29T001256/*txt"))
     
     # id of fpu to plot
-    report_id = 102
+    report_id = 191
     
     cntrs_fn = "data/FPU_calibrations/FPUCAL_MAY24/FPU_ARM_LENGTH_DATA_2024-05-28T231144/arm_length_data.csv"
     arm_length_fn='data/FPU_calibrations/FPUCAL_MAY24/FPU_ARM_LENGTH_DATA_2024-05-28T231144/arm_length_data.csv'
@@ -238,16 +257,19 @@ if __name__ == "__main__":
                            'alpha_theta': centres['alpha_theta'],
                            'alpha_length': centres['alpha_length'],
                            'beta_length': centres['beta_length'],
-                           'alpha_zero': alpha0-alpha_diff_mean,
-                           'beta_zero': 6.5-beta_diff_mean})
+                           'alpha_zero': -1*(alpha0-alpha_diff_mean),
+                           'beta_zero': -1*(6.5-beta_diff_mean)})
     config.to_csv('data/FPU_calibrations/FPUCAL_MAY24/FPU_ARM_LENGTH_DATA_2024-05-28T231144/arm_length_config.csv', index=False)
     
     # plot the given fpu
-    fig, ax = plt.subplots()
-    ax.scatter(expected_alpha, alpha_diff.loc[report_id], label='Alpha')
-    ax.scatter(expected_beta, beta_diff.loc[report_id], label='Beta')
-    ax.set_title('FPU ID: ' + str(report_id))
-    ax.set_xlabel('Expected Angle (degrees)')
-    ax.set_ylabel('Mean Difference (degrees)')
-    ax.legend()
+    fig, ax = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
+    ax[0].scatter(expected_alpha, alpha_diff.loc[report_id], label='Alpha')
+    ax[1].scatter(expected_beta, beta_diff.loc[report_id], label='Beta')
+    ax[0].set_title('FPU ID: ' + str(report_id))
+    ax[1].set_xlabel('Expected Angle (degrees)')
+    ax[0].set_ylabel('Alpha Difference (degrees)')
+    ax[1].set_ylabel('Beta Difference (degrees)')
+    ax[0].grid()
+    ax[1].grid()
+    # ax[0].legend()
     plt.show()
