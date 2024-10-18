@@ -3,7 +3,6 @@ Module for finding corresponding points between two datasets
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
 from sklearn.neighbors import NearestNeighbors
 from src.transform.spatial import do_transform
 
