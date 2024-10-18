@@ -1,6 +1,5 @@
 import numpy as np
 import matplotlib.pyplot as plt
-import matplotlib as mpl
 import pandas as pd
 import glob
 from src.metro_io import read_metro_out, read_FPU_out
@@ -100,20 +99,22 @@ def build_pos_df(fn_list, mode='alpha'):
         
             full_beta_df = read_metro_out(fn)
             pos_df = full_beta_df[['ID', 'R', 'Theta']]
-        
-        Z_dict['fpu_ids'] = pos_df['ID']
-        Y_dict['fpu_ids'] = pos_df['ID']
-        
-        # # make sure that the fpu ids are the same in each file
-        if not np.array_equal(pos_df['ID'], Z_dict['fpu_ids']):
-            raise ValueError("FPU IDs are not the same in each file")
+            
 
         # store the data in the arrays
-        Z_dict["Z_" + pos], Y_dict["Y_" + pos] = convert_to_cartesian(pos_df['R'], pos_df['Theta'])
+        z, y = convert_to_cartesian(pos_df['R'], pos_df['Theta'])
+        
+        # create a pandas series for x and y
+        y_series = pd.Series(y.to_numpy(), name=pos, index=pos_df['ID'])
+        z_series = pd.Series(z.to_numpy(), name=pos, index=pos_df['ID'])
+        
+        # store the series in the dictionary
+        Y_dict[pos] = y_series
+        Z_dict[pos] = z_series
         
     # convert the dictionary to a dataframe
-    Y_df = pd.DataFrame(Y_dict).set_index('fpu_ids')
-    Z_df = pd.DataFrame(Z_dict).set_index('fpu_ids')
+    Y_df = pd.DataFrame(Y_dict)
+    Z_df = pd.DataFrame(Z_dict)
     
     return Y_df, Z_df
 
@@ -221,17 +222,17 @@ def find_offset(fn_list, centres_fn, expected_angles, alpha_0=142, mode='alpha',
     
 if __name__ == "__main__":
     # get the data intermediate for alpha, metrology output for beta
-    inter_data_fns = sorted(glob.glob("data/FPU_calibrations/FPUCAL_MAY24/FPU_ARM_LENGTH_DATA_2024-05-28T231144/**/arm_length_intermediate_data.csv", recursive=True))
-    beta_data_fns = sorted(glob.glob("data/FPU_calibrations/FPUCAL_MAY24/FPU_ARM_LENGTH_DATA_2024-05-28T231144/ALPHA_POSITION_0_2024-05-29T001256/*txt"))
+    inter_data_fns = sorted(glob.glob("data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-10-08T130155/**/arm_length_intermediate_data.csv", recursive=True))
+    beta_data_fns = sorted(glob.glob("data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-10-08T130155/ALPHA_POSITION_0_2024-10-08T150301/*txt"))
     
     # id of fpu to plot
-    report_id = 191
+    report_id = 516
     
-    cntrs_fn = "data/FPU_calibrations/FPUCAL_MAY24/FPU_ARM_LENGTH_DATA_2024-05-28T231144/arm_length_data.csv"
-    arm_length_fn='data/FPU_calibrations/FPUCAL_MAY24/FPU_ARM_LENGTH_DATA_2024-05-28T231144/arm_length_data.csv'
+    cntrs_fn = "data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-10-08T130155/arm_length_data.csv"
+    arm_length_fn='data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-10-08T130155/arm_length_data.csv'
     
-    expected_alpha = np.array([-180., -132.86, -85.72, -38.58, 8.56, 55.7, 102.84, 149.98])
-    expected_beta = np.array([-172., -128.57, -85.14, -41.71, 45.15, 88.58, 132.01])
+    expected_alpha = np.array([-178.0, -131.143, -84.286, -37.429, 9.428, 56.285, 103.142, 149.999])
+    expected_beta = np.array([-172., -130.714, -89.428, -48.142, 8.144, 49.43, 90.716, 132.002])
     
     # wrap the angles
     expected_alpha[expected_alpha < 0] += 360
@@ -259,7 +260,7 @@ if __name__ == "__main__":
                            'beta_length': centres['beta_length'],
                            'alpha_zero': -1*(alpha0-alpha_diff_mean),
                            'beta_zero': -1*(6.5-beta_diff_mean)})
-    config.to_csv('data/FPU_calibrations/FPUCAL_MAY24/FPU_ARM_LENGTH_DATA_2024-05-28T231144/arm_length_config.csv', index=False)
+    config.to_csv('data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-10-08T130155/full_config.csv', index=False)
     
     # plot the given fpu
     fig, ax = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
