@@ -2,7 +2,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 import glob
-from src.metro_io import read_metro_out, read_FPU_out
+from src.metro_io import read_metro_out
+import argparse
+import os
 
 
 def convert_to_cartesian(r, theta):
@@ -71,6 +73,14 @@ def read_intermediate_data(fn):
     
     return pos_df
 
+def get_beta_pos(fn):
+    
+    folder_name = fn.split('/')[-1]
+    pos = folder_name.split('_')[4].split('.')[0][1:]
+    print(pos)
+    return int(pos)
+    
+
 
 def build_pos_df(fn_list, mode='alpha'):
     '''
@@ -95,7 +105,8 @@ def build_pos_df(fn_list, mode='alpha'):
         
         if mode == 'beta':
             folder_name = fn.split('/')[-1]
-            pos = folder_name.split('_')[4][:2]
+            pos = folder_name.split('_')[4].split('.')[0][1:]
+            
         
             full_beta_df = read_metro_out(fn)
             pos_df = full_beta_df[['ID', 'R', 'Theta']]
@@ -170,7 +181,7 @@ def find_offset(fn_list, centres_fn, expected_angles, alpha_0=142, mode='alpha',
 
     
     for i in range(Y_corr.shape[1]):
-        r_rot[:,i], theta_rot[:,i] = convert_to_polar(Y_rot[:,i], Z_rot[:,i], wrap=True)
+        r_rot[:,i], theta_rot[:,i] = convert_to_polar(Y_rot[:,i], Z_rot[:,i], wrap=False)
     
     theta_diff = theta_rot - expected_angles
     
@@ -178,6 +189,7 @@ def find_offset(fn_list, centres_fn, expected_angles, alpha_0=142, mode='alpha',
     theta_diff_df = pd.DataFrame(theta_diff, columns=[str(exp) for exp in expected_angles], 
                                  index=Y_df.index)
     
+    # TODO: Remove plots? This should be its own commit
     # plot the data
     fig, ax = plt.subplots(figsize=(10,10))
     for i in range(Y_corr.shape[1]):
@@ -221,36 +233,56 @@ def find_offset(fn_list, centres_fn, expected_angles, alpha_0=142, mode='alpha',
     
     
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--ex_alpha', type=float, nargs='+', default=None)
+    parser.add_argument('--ex_beta', type=float, nargs='+', default=None)
+    parser.add_argument('--alpha0', type=float, default=142)
+    parser.add_argument('--beta0', type=float, default=6.5)
+    args = parser.parse_args()
+    
     # get the data intermediate for alpha, metrology output for beta
-    inter_data_fns = sorted(glob.glob("data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-10-08T130155/**/arm_length_intermediate_data.csv", recursive=True))
-    beta_data_fns = sorted(glob.glob("data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-10-08T130155/ALPHA_POSITION_0_2024-10-08T150301/*txt"))
+    inter_data_fns = sorted(glob.glob("data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-11-11T190751/**/arm_length_intermediate_data.csv", recursive=True))
+    beta_data_fns = sorted(glob.glob("data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-11-11T190751/ALPHA_POSITION_0_2024-11-11T200858/*txt"), key=get_beta_pos)
+    cntrs_fn = "data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-11-11T190751/arm_length_data.csv"
+    arm_length_fn='data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-11-11T190751/arm_length_data.csv'
     
-    # id of fpu to plot
-    report_id = 516
+    alpha4beta_folder = beta_data_fns[0].split('/')[-2]
+    alpha4beta_pos = int(alpha4beta_folder.split('_')[2])
     
-    cntrs_fn = "data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-10-08T130155/arm_length_data.csv"
-    arm_length_fn='data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-10-08T130155/arm_length_data.csv'
-    
-    expected_alpha = np.array([-178.0, -131.143, -84.286, -37.429, 9.428, 56.285, 103.142, 149.999])
-    expected_beta = np.array([-172., -130.714, -89.428, -48.142, 8.144, 49.43, 90.716, 132.002])
+    if args.ex_alpha is None:
+        expected_alpha = np.array([-178.0, -131.143, -84.286, -37.429, 9.428, 56.285, 103.142, 149.999])
+    else:
+        expected_alpha = np.array(args.ex_alpha)
+        
+        
+    if args.ex_beta is None:
+        expected_beta = np.array([-165., -124.714, -84.428, -44.142, 11.144, 51.43, 91.716, 132.002])
+    else:
+        expected_beta = np.array(args.ex_beta)
     
     # wrap the angles
-    expected_alpha[expected_alpha < 0] += 360
-    expected_beta[expected_beta < 0] += 360
+    unwrapped_alpha = expected_alpha.copy()
+    unwrapped_beta = expected_beta.copy()
+    # expected_alpha[expected_alpha < 0] += 360
+    # expected_beta[expected_beta < 0] += 360
     
-    alpha0 = 142
+    
+    alpha0 = args.alpha0
     alpha_diff = find_offset(inter_data_fns, cntrs_fn, expected_alpha)
-                                 
-    alpha_diff_mean = np.mean(alpha_diff.to_numpy(), axis=1)
+    # alpha_diff.to_csv('data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-11-11T190751/alpha_diff.csv')
 
-    corr_alpha = find_offset(inter_data_fns, cntrs_fn, expected_alpha, alpha_0=alpha0-alpha_diff_mean, mode='alpha')
+    corr_alpha = find_offset(inter_data_fns, cntrs_fn, expected_alpha, 
+                             alpha_0=alpha0-alpha_diff.iloc[:,0].to_numpy(), 
+                             mode='alpha')
     
+    beta_alpha0 = alpha0 - alpha_diff.iloc[:,alpha4beta_pos].to_numpy() + (-180 - expected_alpha[0])
+    # remove the magic number
     beta_diff = find_offset(beta_data_fns, cntrs_fn, expected_beta, mode='beta',
-                            arm_length_fn=arm_length_fn, alpha_0=alpha0-alpha_diff_mean)
-    
-    beta_diff_mean = np.mean(beta_diff.to_numpy(), axis=1)
-    
-
+                            arm_length_fn=arm_length_fn, 
+                            alpha_0=beta_alpha0)
+    # beta_diff.to_csv('data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-11-11T190751/beta_diff.csv')
+            
+    beta_diff_mean = np.nanmean(beta_diff.to_numpy(), axis=1)
     # create the config file
     # load the centres file
     centres = pd.read_csv(cntrs_fn)
@@ -258,14 +290,17 @@ if __name__ == "__main__":
                            'alpha_theta': centres['alpha_theta'],
                            'alpha_length': centres['alpha_length'],
                            'beta_length': centres['beta_length'],
-                           'alpha_zero': -1*(alpha0-alpha_diff_mean),
-                           'beta_zero': -1*(6.5-beta_diff_mean)})
-    config.to_csv('data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-10-08T130155/full_config.csv', index=False)
+                           'alpha_zero': -1*(alpha0-alpha_diff.iloc[:,0].to_numpy()),
+                           'beta_zero': args.beta0-beta_diff_mean}) 
+    # config.to_csv('data/PAE_closure/arm_cal/FPU_ARM_LENGTH_DATA_2024-11-11T190751/full_config.csv', index=False)
     
+    
+    # id of fpu to plot
+    report_id = 447
     # plot the given fpu
     fig, ax = plt.subplots(2, 1, figsize=(10, 10), sharex=True)
-    ax[0].scatter(expected_alpha, alpha_diff.loc[report_id], label='Alpha')
-    ax[1].scatter(expected_beta, beta_diff.loc[report_id], label='Beta')
+    ax[0].scatter(unwrapped_alpha, alpha_diff.loc[report_id], label='Alpha')
+    ax[1].scatter(unwrapped_beta, beta_diff.loc[report_id], label='Beta')
     ax[0].set_title('FPU ID: ' + str(report_id))
     ax[1].set_xlabel('Expected Angle (degrees)')
     ax[0].set_ylabel('Alpha Difference (degrees)')
