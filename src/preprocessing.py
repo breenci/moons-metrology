@@ -234,6 +234,32 @@ def align_measurements(ref, unal, targ_ids, scale=False):
     return al_coords
 
 
+def full_filter(pnt_cld, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[1.15,1.9,2.6], 
+                      stol=.35, m=.0005):
+    
+    # make input lists arrays 
+    c_arr = np.array(c)
+    size_arr = np.array(sizes)
+
+    coords = pnt_cld[:, 1:4]
+    # do sphere filtering
+    sp_mask, sp_fltrd = sphere_filter(coords, r, c_arr, rtol)
+    
+    sp_fltrd_pc = np.copy(pnt_cld)
+    sp_fltrd_pc = sp_fltrd_pc[sp_mask] 
+    sp_fltrd_pc[:,1:4] = sp_fltrd
+    
+    # correct sizes
+    sp_fltrd_pc[:,7] = lin_corr(sp_fltrd_pc[:,1:4], sp_fltrd_pc[:,7], m)
+    
+    # do size filtering
+    size_mask,_,new_sizes = size_filter(sp_fltrd_pc[:,1:4], sp_fltrd_pc[:,7], size_arr, stol)
+    ffltrd = sp_fltrd_pc[size_mask]
+    ffltrd[:, 7] = new_sizes
+    
+    return ffltrd
+    
+    
 def preprocess_pntcld(fn, align_ref_fn, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[1.15,1.9,2.6], 
                       stol=.35, m=.0005, template_ids=np.arange(1, 200)):
     """Prepares point cloud for fpu identification"""
