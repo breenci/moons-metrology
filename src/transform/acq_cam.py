@@ -50,7 +50,7 @@ def plt2pix(coords_arr, mat_arr):
     # do transform
     plt_in_pix = matrix_transform(coords_arr, plt2pix_mat)
 
-    # remove z axis
+    # remove x axis
     out_coords = plt_in_pix[:, 1:3]
 
     return out_coords
