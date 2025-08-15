@@ -95,7 +95,6 @@ def get_pln_t_mat(pln_pnts, new_origin, z0):
     return trans_mat
 
 
-
 def matrix_transform(coords, trans_mat):
     """Do the matrix transformation"""
 

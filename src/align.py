@@ -41,7 +41,6 @@ def kabsch_umeyama(A, B, scale=True):
     R = np.matmul(np.matmul(U, S), VT)
     c = A_var / np.trace(np.matmul(np.diag(D), S))
     
-
     # bring all together to create augmented transformation matrix
     if scale is True:
         t = A_cntr - np.matmul(c * R, B_cntr)
