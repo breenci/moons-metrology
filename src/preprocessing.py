@@ -261,7 +261,7 @@ def full_filter(pnt_cld, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[1.15,1.9,2.6],
     
     
 def preprocess_pntcld(fn, align_ref_fn, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[1.15,1.9,2.6], 
-                      stol=.35, m=.0005, template_ids=np.arange(1, 200)):
+                      stol=.35, m=.0005, template_ids=np.arange(1, 200), save_aligned=False, save_fn=None):
     """Prepares point cloud for fpu identification"""
     
     # make input lists arrays 
@@ -274,6 +274,16 @@ def preprocess_pntcld(fn, align_ref_fn, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=
     # align to template
     template_data = np.loadtxt(align_ref_fn)
     al_ffltrd = align_measurements(template_data, pnt_cld, template_ids)
+    
+    if save_aligned:
+        if save_fn is None:
+            raise ValueError('save_fn must be specified if save_aligned is True')
+        al_pntcld = np.copy(pnt_cld)
+        al_pntcld[:, 1:4] = al_ffltrd
+        # flip to left handed coordinate system
+        al_pntcld[:,1] = -1*al_pntcld[:,1]
+        np.savetxt(save_fn, al_pntcld, fmt='%s')
+
 
     # do sphere filtering
     sp_mask, sp_fltrd = sphere_filter(al_ffltrd, r, c_arr, rtol)
