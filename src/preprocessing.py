@@ -1,5 +1,14 @@
 """
-Module to filter spurious points from a metrology ouput point cloud
+Module to filter spurious points from a metrology ouput point cloud. 
+
+This module contains functions to filter points based on their distance from a
+spherical surface and their size. It also includes functions to align point
+clouds using the Kabsch-Umeyama algorithm, which is useful for aligning
+measurements to a reference point cloud. The module provides functionality for
+preprocessing the raw output of the Hexagon Metrology System to prepare it
+for input into the FPU identification algorithm.
+
+Author: Ciarán Breen (UK ATC)
 """
 
 import numpy as np
@@ -80,7 +89,16 @@ def size_filter(coords, sizes, size_arr, tol):
 
 
 def lin_corr(coords, sizes, m):
-    """Function to filter points based on a linear size relationship"""
+    """Correct sizes as a linear function of radial distance from origin
+    
+    :param coords: 3D point cloud coordinates with X, Y, and Z in columns
+    :type coords: N x 3 numpy array
+    :param sizes: Array of point sizes
+    :type sizes: 1d numpy array
+    :param m: slope of the linear relationship
+    :type m: float
+    :return: Corrected sizes
+    :rtype: 1d numpy array"""
     
     D_rad = np.sqrt(np.sum(coords**2, axis=1))
     
@@ -162,9 +180,23 @@ def matrix_transform(coords, trans_mat):
 
 
 def kabsch_umeyama(A, B, scale=True):
-    """Apply the Kabsch Uneyama algorithm"""
+    """Apply the Kabsch Uneyama algorithm to align two point clouds
+    
+    Kabsch-Umeyama algorithm is used to find the optimal rotation, scaling, and
+    translation to align two point clouds through a least squares method.
+     
+    see https://web.stanford.edu/class/cs273/refs/umeyama.pdf for details.
 
-    # see https://web.stanford.edu/class/cs273/refs/umeyama.pdf
+    :param A: reference point cloud
+    :type A: numpy.ndarray
+    :param B: point cloud to be aligned
+    :type B: numpy.ndarray
+    :param scale: allow scaling in tranformation, defaults to True
+    :type scale: bool, optional
+    :return: transformation matrix for alignment of B to A
+    :rtype: numpy.ndarray
+    """
+
     n, m = A.shape
 
     # get mean vector of A and B
@@ -205,7 +237,23 @@ def kabsch_umeyama(A, B, scale=True):
 
 
 def align_measurements(ref, unal, targ_ids, scale=False):
-    """Aligns point clouds with reference"""
+    """Aligns a point cloud to reference using Kabsch-Umeyama algorithm
+    
+    Common targets are identified in both datasets and used to calculate the
+    transformation matrix. The unaligned dataset is then transformed to align
+    with the reference dataset.
+
+    :param ref: reference dataset
+    :type ref: numpy.ndarray
+    :param unal: unaligned dataset
+    :type unal: numpy.ndarray
+    :param targ_ids: ids of points to be used in alignment
+    :type targ_ids: numpy.ndarray
+    :param scale: allow scling in transformation, defaults to False
+    :type scale: bool, optional
+    :return: aligned coordinates
+    :rtype: numpy.ndarray"""
+    
     # load ref id and xyz
     # get targets from input ids
     ref_ids = ref[:, 0]
@@ -262,7 +310,39 @@ def full_filter(pnt_cld, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[1.15,1.9,2.6],
     
 def preprocess_pntcld(fn, align_ref_fn, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=[1.15,1.9,2.6], 
                       stol=.35, m=.0005, template_ids=np.arange(1, 200), save_aligned=False, save_fn=None):
-    """Prepares point cloud for fpu identification"""
+    """Prepares point cloud for fpu identification
+    
+    Loads a point cloud file, aligns it to a template using the Kabsch-Umeyama,
+    applies a sphere filter, and then applies a size filter. Flips the
+    coordinates to a left-handed coordinate system to match the plate coordinate
+    system defined in VLT-TRE-MON-14620-3007 RFE Software Design Description.
+    
+    Aligned, unfiltered point cloud can be optionaly saved to a file.
+    
+    :param fn: Path to the point cloud file
+    :type fn: str
+    :param align_ref_fn: Path to the template point cloud file for alignment
+    :type align_ref_fn: str
+    :param r: Radius of sphere which defines filtering surface, defaults to 4101.1
+    :type r: float, optional
+    :param c: Centre of sphere which defines filtering surface, defaults to [4101.1, 0, 0]
+    :type c: list, optional
+    :param rtol: Tolerance for sphere filtering, defaults to 1
+    :type rtol: float, optional
+    :param sizes: Array of desired sizes for size filtering, defaults to [1.15, 1.9, 2.6]
+    :type sizes: list, optional
+    :param stol: Tolerance for size filtering, defaults to 0.35
+    :type stol: float, optional
+    :param m: Slope of the linear relationship for size correction, defaults to 0.0005
+    :type m: float, optional
+    :param template_ids: IDs of points to be used in alignment, defaults to np.arange(1, 200)
+    :type template_ids: numpy.ndarray, optional
+    :param save_aligned: Whether to save the aligned point cloud, defaults to False
+    :type save_aligned: bool, optional
+    :param save_fn: Path to save the aligned point cloud if save_aligned is True
+    :type save_fn: str, optional
+    :return: Filtered and aligned point cloud data
+    :rtype: numpy.ndarray"""
     
     # make input lists arrays 
     c_arr = np.array(c)
