@@ -10,6 +10,15 @@ from src.transform.spatial import do_transform
 def rescale(mask1, mask2, ref1, ref2):
     """Rescale mask2 so that the distance between two reference points is
     the same in mask1 and mask2.
+
+    :param mask1: First mask dataset
+    :type mask1: numpy.ndarray
+    :param mask2: Second mask dataset
+    :type mask2: numpy.ndarray
+    :param ref1: Reference points in mask1
+    :type ref1: tuple
+    :param ref2: Reference points in mask2
+    :type ref2: tuple
     """
 
     # calculate ref distance in both coordinate systems
@@ -38,6 +47,15 @@ def dist_calc(pnt1, pnt2):
 def match_near_nbrs(data1, data2, tol):
     """Use nearest neighbours analysis to find the indices of corresponding
     points between the two datasets.
+
+    :param data1: First dataset
+    :type data1: numpy.ndarray
+    :param data2: Second dataset
+    :type data2: numpy.ndarray
+    :param tol: Distance tolerance for matching points
+    :type tol: float
+    :return: Indices of corresponding points in both datasets
+    :rtype: tuple
     """
 
     # Stack datasets for nearest neighbours analysis
@@ -60,10 +78,25 @@ def match_near_nbrs(data1, data2, tol):
     return idx1_out, idx2_out
 
 
-def get_corr(mask1, mask2, ref1, ref2):
-    '''Finds corresponding points between the two mask datasets. Rough aligns
-    mask2 to mask1 using common reference points and then uses nearest
-    neighbours analysis to find indices of corresponding points'''
+def get_corr(mask1, mask2, ref1, ref2, tol=0.3):
+    """Finds corresponding points between the two mask datasets. 
+    
+    Rough aligns mask2 to mask1 using common reference points and then uses 
+    nearest neighbours analysis to find indices of corresponding points
+
+    :param mask1: First mask dataset
+    :type mask1: numpy.ndarray
+    :param mask2: Second mask dataset
+    :type mask2: numpy.ndarray
+    :param ref1: Reference points in mask1
+    :type ref1: tuple
+    :param ref2: Reference points in mask2
+    :type ref2: tuple
+    :param tol: Distance tolerance for matching points
+    :type tol: float
+    :return: Indices of corresponding points in both datasets
+    :rtype: tuple
+    """
 
     # Transform mask data into coordinate system defined by common reference
     # points to rough align
@@ -77,18 +110,6 @@ def get_corr(mask1, mask2, ref1, ref2):
     RA_mask2 = rescale(RA_mask1, trans_mask2, ref1, ref2)
 
     # NN analysis
-    ind1, ind2 = match_near_nbrs(RA_mask1, RA_mask2, .3)
+    ind1, ind2 = match_near_nbrs(RA_mask1, RA_mask2, tol)
 
     return ind1, ind2
-
-
-if __name__ == '__main__':
-    # load datasets
-    cam_mask = np.loadtxt('mask_test/mask_AC_01.txt')
-    met_mask = np.loadtxt('mask_test/transformed_coords_mask1_15092021.txt')
-
-    # pad and reflect AC camera image in y axis
-    cmask_pad = np.hstack((cam_mask, np.zeros((len(cam_mask[:, 1]), 1))))
-    cmask_pad[:, 1] = -1 * cmask_pad[:, 1]
-
-    a, b = get_corr(met_mask, cmask_pad, (25, 11), (13, 0))
