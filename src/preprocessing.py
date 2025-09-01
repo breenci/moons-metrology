@@ -197,25 +197,3 @@ def preprocess_pntcld(fn, align_ref_fn, r=4101.1, c=[4101.1,0,0], rtol=1, sizes=
     ffltrd[:,1] = -1*ffltrd[:,1]
     
     return ffltrd
-    
-
-if __name__ == '__main__':
-
-    coded_fn = 'data/FULLPLATE_250923/FULLPLATE_01_01_01_TEM/FULLPLATE_01_01_01_TEM_HIN.txt'
-    pnt_cloud_fn = 'data/FPM_011223/TEST_03_01/FPM_03_01_03.txt'
-    
-    preprocessed_data = preprocess_pntcld(pnt_cloud_fn, coded_fn, r=4101.1, c=[4101.4, 0, 0], 
-                                      stol=0.35)
-    
-    # plot the raw data
-    raw_data = np.loadtxt(pnt_cloud_fn)
-    template_data = np.loadtxt(coded_fn)
-    fig, ax = plt.subplots(1,2, sharey=True, sharex=True)
-    ax[0].scatter(raw_data[:, 2], raw_data[:, 3], s=1)
-    ax[0].set_ylabel('Z (mm)')
-    ax[0].set_xlabel('Y (mm)')
-    ax[1].scatter(preprocessed_data[:, 2], preprocessed_data[:, 3], s=1)
-    ax[1].scatter(template_data[:, 2], template_data[:, 3], s=1)
-    ax[1].set_xlabel('Y (mm)')
-    ax[1].set_title('Preprocessed')
-    plt.show()
