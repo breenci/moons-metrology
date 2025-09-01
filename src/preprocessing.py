@@ -12,11 +12,8 @@ Author: Ciarán Breen (UK ATC)
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
-from pnt_filter import sphere_filter, size_filter
-from transform.spatial import matrix_transform
+from src.pnt_filter import sphere_filter, size_filter
 from align import align_measurements
-
 
 
 def lin_corr(coords, sizes, m):
