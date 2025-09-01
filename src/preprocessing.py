@@ -13,7 +13,7 @@ Author: Ciarán Breen (UK ATC)
 
 import numpy as np
 from src.pnt_filter import sphere_filter, size_filter
-from align import align_measurements
+from src.align import align_measurements
 
 
 def lin_corr(coords, sizes, m):
