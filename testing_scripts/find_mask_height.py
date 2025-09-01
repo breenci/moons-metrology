@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
 from src.preprocessing import sphere_filter
-from src.pnt_filter import points_in_box
+from src.pnt_filter import cylinder_filter
 from src.transform.spatial import plane_fitter
 from skspatial.objects import Line, Sphere
 
@@ -64,7 +64,8 @@ def find_x_sphere_point(radius, centre, known_coords):
 
 if __name__ == "__main__":
     # load the point cloud file
-    pnt_cloud_fn = 'data/ACQCAL/ACQCAL_01_01_METR_RAW.txt'
+    pnt_cloud_fn = 'test_data/PAE-AC-TESTS_JUL2024/METRO_OUT.txt'
+
     pnt_cld = np.loadtxt(pnt_cloud_fn)
     
     # flip the x axis to make the coordinate system left handed
@@ -88,8 +89,9 @@ if __name__ == "__main__":
     # load the nominal mask posistions
     exp_mask_pos = pd.read_csv('data/ACQCAL/AC_nominal_positions.csv')
     # remove masks 18, 11, 5 (these are not fitted)
+    keep_list = [5, 1, 18, 11, 8, 13]
     rm_list = [18, 11, 5]
-    mask_pos = exp_mask_pos[~exp_mask_pos['AC ID'].isin(rm_list)]
+    mask_pos = exp_mask_pos[exp_mask_pos['AC ID'].isin(keep_list)]
     
     # get the masks and store each set of points in a dictionary
     mask_points = {}
@@ -104,23 +106,19 @@ if __name__ == "__main__":
         ac = mask_pos[mask_pos['AC ID'] == i]
         
         # get the points in the mask
-        # lengths for box filter
-        L = [10, 27, 27]
         # nominal centre of the mask
-        box_centre = ac[['X', 'Y', 'Z']].values[0]
-        # reference point for box filter
-        box_point = [box_centre[0] - L[0]/2, box_centre[1] - L[1]/2, 
-                     box_centre[2] - L[2]/2]
+        mask_centre = ac[['X', 'Y', 'Z']].values[0]
+
+        start_axis = [mask_centre[0]-5, mask_centre[1], mask_centre[2]]
+        end_axis = [mask_centre[0]+5, mask_centre[1], mask_centre[2]]
 
         # do the filtering to get mask points
-        ac_mask = points_in_box(pnt_cld[:,1:4], box_point, L)
-        ac_pnts = pnt_cld[ac_mask]
+        ac_pnts = cylinder_filter(pnt_cld[:,1:4], start_axis, end_axis, radius=13)
         
-        # remove any bad detections (too small)
-        ac_pnts = ac_pnts[ac_pnts[:,7] > 1]
+        print(f'AC {i} has {ac_pnts.shape[0]} points')
         
         # fit a plane to the points
-        normal, centroid = plane_fitter(ac_pnts[:,1:4])
+        normal, centroid = plane_fitter(ac_pnts)
         
         # define a line frrom the mask centroid along the normal
         line = Line(point=centroid, direction=normal)
@@ -150,7 +148,7 @@ if __name__ == "__main__":
     # mask_df.to_csv('data/ACQCAL/mask_height_diff.csv', index=False)
     # in the region of the mask plot the mask plane and the sphere
     # define a bound around the mask to plot
-    ID = 20
+    ID = 5
     plot_range = 5
     
     # load info for selected mask
