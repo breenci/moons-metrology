@@ -140,12 +140,3 @@ def do_transform(data, plane_inds, origin_ind, y0_ind, origin_mode='ind'):
     transformed = matrix_transform(data, trans_mat)
 
     return transformed
-
-
-if __name__ == '__main__':
-    
-    cd_trgts = np.loadtxt("data/metrology_software_test_100fpus/pltcoords_ref_obj_codedtargets.txt")
-    coords = cd_trgts[:,1:4]
-    coords[:,0] = coords[:,0] - 178.4
-
-    norm, cntr = plane_fitter(coords)

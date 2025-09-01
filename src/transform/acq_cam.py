@@ -90,16 +90,3 @@ def transform_from_file(coords_fn, mat_fn, out_fn=None, mode='pix2plt'):
         np.savetxt(out_fn, out_coords)
 
     return out_coords
-
-
-if __name__ == '__main__':
-    
-    fig, ax = plt.subplots()
-    for mask in np.sort(glob.glob('dummy_trans_mats/*')):
-        mask_id = mask[23:25]
-
-        plt_coords = transform_from_file('mask_test/mask_AC_01.txt', mask)
-
-        ax.scatter(plt_coords[:, 0], plt_coords[:, 1], s=1)
-
-    plt.show()
