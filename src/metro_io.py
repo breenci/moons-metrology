@@ -33,7 +33,8 @@ def read_metro_raw(fn):
     colnames = ['ID', 'X', 'Y', 'Z', 'errX', 'errY', 'errZ', 'S']
     raw_df = pd.read_csv(fn, sep=' ', header=None, names=colnames)
     return raw_df
-    
+
+
 def read_obc(fn):
     """Read the OBC file"""
     colnames = ["ID", "X", "Y", "Z", "X_err", "Y_err", "Z_err", "Rays", 
