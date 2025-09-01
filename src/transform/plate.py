@@ -45,31 +45,3 @@ def polar2cart(rho, theta, roc, angle_unit='rad'):
     y_plt = r_proj * np.sin(theta_rad)
 
     return x_plt, y_plt, z_plt
-
-
-if __name__ == '__main__':
-    # recent centres file provided by GS
-    new_cntrs_fn = 'data/FPU_calibrations/FPUCAL_03/FPU_ALPHA_CENTRES/results20240325-092858.csv'
-    # old metrology centres file for reference
-    old_met_cntrs_fn = 'data/FULLPLATE_250923/FULLPLATE_10/Positioners-Centers-260224.txt'
-    
-    # load the data
-    new_cntrs = pd.read_csv(new_cntrs_fn)
-    old_cntrs = np.loadtxt(old_met_cntrs_fn)
-    
-    # convert new centres to cartesian
-    new_x, new_y, new_z = polar2cart(new_cntrs['r_centre'], new_cntrs['theta_centre'], 4101.1, angle_unit='deg')
-    
-    # plot the new and old centres to confirm that the conversion is correct
-    fig, ax = plt.subplots()
-    ax.scatter(new_y, new_z, label='New Centres')
-    ax.scatter(old_cntrs[:,6], old_cntrs[:,7], label='Old Centres')
-    ax.scatter(new_y[0], new_z[0], label='FPU 12', color='red')
-    ax.scatter(old_cntrs[0,6], old_cntrs[0,7], label='FPU 12', color='red')
-    ax.set_xlabel('Y (mm)')
-    ax.set_ylabel('Z (mm)')
-    plt.show()
-    
-    
-    
-    

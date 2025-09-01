@@ -3,8 +3,15 @@ Module for doing coordinate transformations for metrology measurements
 """
 import numpy as np
 
+
 def plane_fitter(point_coords):
-    '''Fit a plane to a set of points and return the unit normal.'''
+    """Fit a plane to a set of points and return the unit normal.
+
+    :param point_coords: N x 3 array of point coordinates
+    :type point_coords: numpy.ndarray
+    :return: Unit normal vector of the fitted plane and the centroid of the points
+    :rtype: tuple
+    """
 
     # Subtract the centroid from the set of points
     centroid = np.mean(point_coords, axis=0)
@@ -24,7 +31,17 @@ def plane_fitter(point_coords):
 
 
 def change_basis(v1, v2, mode='xy'):
-    """Construct a change of basis matrix given two orthogonal vectors"""
+    """Construct a change of basis matrix given two orthogonal vectors
+
+    :param v1: First orthogonal vector
+    :type v1: numpy.ndarray
+    :param v2: Second orthogonal vector
+    :type v2: numpy.ndarray
+    :param mode: Specifies orientation of basis. e.g 'xy' means v1 is x and v2 is y
+    :type mode: str, optional
+    :return: Change of basis matrix
+    :rtype: numpy.ndarray
+    """
 
     # normalise new unit vectors
     unit2 = v2/np.sqrt(np.sum(v2**2))
@@ -55,7 +72,13 @@ def change_basis(v1, v2, mode='xy'):
 
 
 def get_translate_mat(V_translation):
-    """Construct a matrix which translates by input vector"""
+    """Construct a matrix which translates by input vector
+    
+    :param V_translation: 3D translation vector
+    :type V_translation: numpy.ndarray
+    :return: 4x4 translation matrix
+    :rtype: numpy.ndarray
+    """
 
     # 3D translation matrix is a 4 X 4 identity matrix with the translation
     # vector in the first 3 rows of final column
@@ -67,7 +90,17 @@ def get_translate_mat(V_translation):
 
 def get_pln_t_mat(pln_pnts, new_origin, z0):
     """Construct the transformation matrix for a transformation into new basis
-    with x defined by the normal of a plane and z defined by a point"""
+    with x defined by the normal of a plane and y defined by a point
+    
+    :param pln_pnts: Points that define the plane
+    :type pln_pnts: numpy.ndarray
+    :param new_origin: New origin point
+    :type new_origin: numpy.ndarray
+    :param z0: Point defining the z direction
+    :type z0: numpy.ndarray
+    :return: Transformation matrix
+    :rtype: numpy.ndarray
+    """
     
     # fit a plane and find the unit normal
     new_x,_ = plane_fitter(pln_pnts)
@@ -96,7 +129,15 @@ def get_pln_t_mat(pln_pnts, new_origin, z0):
 
 
 def matrix_transform(coords, trans_mat):
-    """Do the matrix transformation"""
+    """Do the matrix transformation
+
+    :param coords: Input coordinates
+    :type coords: numpy.ndarray
+    :param trans_mat: Transformation matrix
+    :type trans_mat: numpy.ndarray
+    :return: Transformed coordinates
+    :rtype: numpy.ndarray
+    """
 
     # pad input coords with ones to allow translation
     pad_coords = np.vstack((coords.T, np.ones_like(coords[:,0])))
@@ -111,8 +152,18 @@ def matrix_transform(coords, trans_mat):
 
 
 def project_point_to_plane(normal, point, pln_pnt=(0,0,0)):
-    ''' Projects a point to a plane'''
-    
+    """Projects a point to a plane
+
+    :param normal: Normal vector of the plane
+    :type normal: numpy.ndarray
+    :param point: Point to project
+    :type point: numpy.ndarray
+    :param pln_pnt: A point on the plane
+    :type pln_pnt: tuple
+    :return: Projected point
+    :rtype: numpy.ndarray
+    """
+
     #normalise vector
     normal = normal/np.sqrt(np.sum(normal**2))
 
@@ -125,18 +176,39 @@ def project_point_to_plane(normal, point, pln_pnt=(0,0,0)):
 
 
 def do_transform(data, plane_inds, origin_ind, y0_ind, origin_mode='ind'):
+    """Do a transformation of data into a new basis defined by a plane and a point
+    with x defined by the normal of the plane and z defined by the point
+
+    :param data: Input data points
+    :type data: numpy.ndarray
+    :param plane_inds: Indices of points defining the plane
+    :type plane_inds: list
+    :param origin_ind: Index of the origin point
+    :type origin_ind: int
+    :param y0_ind: Index of the point defining the y direction
+    :type y0_ind: int
+    :param origin_mode: Mode for defining the origin point
+    :type origin_mode: str
+    :return: Transformed data points
+    :rtype: numpy.ndarray
+    """
+    # get the points defining the plane
     pln_pnts = data[plane_inds]
-    
+
+    # get the point defining the z direction
     y0 = data[y0_ind]
-    
+
+    # get the point defining the origin either as an index or a point
     if origin_mode == 'pnt':
         origin = origin_ind
         
     if origin_mode == 'ind':
         origin = data[origin_ind]
 
+    # get the transformation matrix
     trans_mat = get_pln_t_mat(pln_pnts, origin, y0)
 
+    # apply the transformation
     transformed = matrix_transform(data, trans_mat)
 
     return transformed
