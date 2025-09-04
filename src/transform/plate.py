@@ -45,3 +45,30 @@ def polar2cart(rho, theta, roc, angle_unit='rad'):
     y_plt = r_proj * np.sin(theta_rad)
 
     return x_plt, y_plt, z_plt
+
+
+def convert_to_polar(Yfiber, Zfiber, roc=4101.1):
+    """Convert fiber coordinates to polar coordinates.
+
+    :param Yfiber: Y coordinate of the fiber
+    :type Yfiber: float
+    :param Zfiber: Z coordinate of the fiber
+    :type Zfiber: float
+    :param roc: Radius of curvature of the plate
+    :type roc: float
+    :return: Curved radial coordinate and angular coordinate
+    :rtype: tuple
+    """
+    # convert to polar coordinates, it assumes origin (0,0)
+    flat_R = np.sqrt(Yfiber**2 + Zfiber**2)
+    theta = np.pi/2 - np.arctan2(Zfiber,Yfiber)
+    
+    # use positive angles 
+    theta = (theta + 2 * np.pi) % (2 * np.pi)
+
+    # convert radial distance into the radial distance 
+    # projected onto a curved focal plane
+    ratio = abs(flat_R / roc)
+    curved_R = roc * np.arcsin(ratio)
+    
+    return curved_R, theta
